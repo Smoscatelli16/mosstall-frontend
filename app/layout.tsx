@@ -1,7 +1,10 @@
+// src/app/layout.tsx
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar"; // <-- ¡NUEVA LÍNEA IMPORTADA!
+import Navbar from "@/components/Navbar";
+import MandatoryReviewModal from "@/components/MandatoryReviewModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,10 +16,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// --- METADATA MODIFICADA ---
 export const metadata: Metadata = {
-  title: "MossTall Marketplace",
-  description: "Tu marketplace de confianza en Misiones",
+  title: "MossTall", // Título limpio como pediste
+  description: "Tu dinero protegido hasta que recibís el producto. Comprá, vendé y contratá servicios con garantía de confianza en Misiones.",
+  icons: {
+    icon: "/logo-icon.svg", // Icono SVG nuevo
+  },
 };
 
 export default function RootLayout({
@@ -25,13 +30,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // --- IDIOMA MODIFICADO ---
     <html lang="es">
       <body
-        // --- CLASES GLOBALES MODIFICADAS ---
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-white`}
       >
-        <Navbar /> {/* <-- ¡NUEVA LÍNEA AÑADIDA! */}
+        <Navbar />
+        <MandatoryReviewModal />
         {children}
       </body>
     </html>
