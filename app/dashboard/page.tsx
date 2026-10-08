@@ -58,7 +58,7 @@ export default function DashboardPage() {
       const payload = JSON.parse(atob(token.split('.')[1]));
       setCurrentUserId(payload.userId);
 
-      const response = await fetch('http://localhost:3001/api/user/dashboard', {
+      const response = await fetch('http://mosstall-desa-production.up.railway.app/api/user/dashboard', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -75,7 +75,7 @@ export default function DashboardPage() {
       const dashboardData = await response.json();
       setData(dashboardData);
 
-      const chatRes = await fetch('http://localhost:3001/api/chat/inbox', {
+      const chatRes = await fetch('http://mosstall-desa-production.up.railway.app/api/chat/inbox', {
           headers: { 'Authorization': `Bearer ${token}` }
       });
       if (chatRes.ok) {
@@ -93,7 +93,7 @@ export default function DashboardPage() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const response = await fetch('http://localhost:3001/api/user/products', {
+      const response = await fetch('http://mosstall-desa-production.up.railway.app/api/user/products', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) setMyProducts(await response.json());
@@ -104,7 +104,7 @@ export default function DashboardPage() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const response = await fetch('http://localhost:3001/api/user/needs', {
+      const response = await fetch('http://mosstall-desa-production.up.railway.app/api/user/needs', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) setMyNeeds(await response.json());
@@ -116,7 +116,7 @@ export default function DashboardPage() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const response = await fetch('http://localhost:3001/api/user/stores', {
+      const response = await fetch('http://mosstall-desa-production.up.railway.app/api/user/stores', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) setMyStores(await response.json());
@@ -140,7 +140,7 @@ export default function DashboardPage() {
     setProcessingId(transactionId);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3001/api/transactions/${transactionId}/confirm-delivery`, {
+      const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${transactionId}/confirm-delivery`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -169,7 +169,7 @@ export default function DashboardPage() {
     setProcessingId(transactionId);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3001/api/transactions/${transactionId}/dispute`, {
+      const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${transactionId}/dispute`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason })
@@ -191,7 +191,7 @@ export default function DashboardPage() {
     setProcessingId(transactionId);
     const token = localStorage.getItem('token');
     try {
-      await fetch(`http://localhost:3001/api/transactions/${transactionId}/cancel`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` } });
+      await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${transactionId}/cancel`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` } });
       await fetchDashboard(); 
     } catch (e) { alert("Error al cancelar."); } 
     finally { setProcessingId(null); }
@@ -203,7 +203,7 @@ export default function DashboardPage() {
     setProcessingId(transactionId);
     const token = localStorage.getItem('token');
     try {
-      await fetch(`http://localhost:3001/api/transactions/${transactionId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${transactionId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       await fetchDashboard(); 
     } catch (e) { alert("Error al eliminar."); } 
     finally { setProcessingId(null); }
@@ -218,7 +218,7 @@ export default function DashboardPage() {
         setProcessingId(null); return;
     }
     try {
-        await fetch(`http://localhost:3001/api/products/${product.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status: newStatus }) });
+        await fetch(`http://mosstall-desa-production.up.railway.app/api/products/${product.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status: newStatus }) });
         await fetchMyProducts();
     } catch(e) { alert("Error actualizando estado"); } finally { setProcessingId(null); }
   };
@@ -228,7 +228,7 @@ export default function DashboardPage() {
     setProcessingId(productId);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3001/api/products/${productId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/products/${productId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) await fetchMyProducts(); else { const d = await res.json(); alert(`Error: ${d.error}`); }
     } catch(e) { alert("Error"); } finally { setProcessingId(null); }
   };
@@ -238,7 +238,7 @@ export default function DashboardPage() {
     setProcessingId(needId);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3001/api/needs/${needId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/needs/${needId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) await fetchMyNeeds(); 
       else { const d = await res.json(); alert(`Error: ${d.error}`); }
     } catch(e) { alert("Error al eliminar pedido."); } 
@@ -253,14 +253,14 @@ export default function DashboardPage() {
     setProcessingId(product.id);
     const token = localStorage.getItem('token');
     try {
-        await fetch(`http://localhost:3001/api/products/${product.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ stock: newStock }) });
+        await fetch(`http://mosstall-desa-production.up.railway.app/api/products/${product.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ stock: newStock }) });
         await fetchMyProducts();
     } catch(e) { alert("Error"); } finally { setProcessingId(null); }
   };
 
   const handleMarkAsRead = async (questionId: string) => {
     const token = localStorage.getItem('token');
-    fetch(`http://localhost:3001/api/questions/${questionId}/read`, {
+    fetch(`http://mosstall-desa-production.up.railway.app/api/questions/${questionId}/read`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
     }).catch(err => console.error("Error marking as read", err));
@@ -276,7 +276,7 @@ export default function DashboardPage() {
       setIsSubmittingReview(true);
       const token = localStorage.getItem('token');
       try {
-          const res = await fetch('http://localhost:3001/api/reviews', {
+          const res = await fetch('http://mosstall-desa-production.up.railway.app/api/reviews', {
               method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({ transactionId: reviewTxId, rating, comment })
           });
@@ -297,7 +297,7 @@ export default function DashboardPage() {
       if (!posTxId || !posAmount) return;
       const token = localStorage.getItem('token');
       try {
-          const res = await fetch(`http://localhost:3001/api/transactions/${posTxId}/checkout-dynamic`, {
+          const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${posTxId}/checkout-dynamic`, {
               method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({ amount: parseFloat(posAmount), description: posDescription })
           });

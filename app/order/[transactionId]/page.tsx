@@ -28,7 +28,7 @@ export default function OrderRoomPage() {
 
             try {
                 // Obtener ID del usuario actual (Asumimos endpoint de perfil, o puedes leerlo del JWT)
-                const userRes = await fetch('http://localhost:3001/api/user/profile', {
+                const userRes = await fetch('http://mosstall-desa-production.up.railway.app/api/user/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (userRes.ok) {
@@ -37,7 +37,7 @@ export default function OrderRoomPage() {
                 }
 
                 // Obtener Sala de Chat y Transacción
-                const chatRes = await fetch(`http://localhost:3001/api/chat/${transactionId}`, {
+                const chatRes = await fetch(`http://mosstall-desa-production.up.railway.app/api/chat/${transactionId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (chatRes.ok) {
@@ -58,7 +58,7 @@ export default function OrderRoomPage() {
     // 2. Polling de Mensajes (Solo si la sala está activa)
     const fetchMessages = async (roomId: string, token: string) => {
         try {
-            const res = await fetch(`http://localhost:3001/api/chat/room/${roomId}/messages`, {
+            const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/chat/room/${roomId}/messages`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -93,7 +93,7 @@ export default function OrderRoomPage() {
         setNewMessage(''); // Limpiamos el input rápido para UX
 
         try {
-            const res = await fetch('http://localhost:3001/api/chat/message', {
+            const res = await fetch('http://mosstall-desa-production.up.railway.app/api/chat/message', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ export default function OrderRoomPage() {
         
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`http://localhost:3001/api/transactions/${transactionId}/confirm-delivery`, {
+            const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${transactionId}/confirm-delivery`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -137,7 +137,7 @@ export default function OrderRoomPage() {
         
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`http://localhost:3001/api/transactions/${transactionId}/dispute`, {
+            const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${transactionId}/dispute`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

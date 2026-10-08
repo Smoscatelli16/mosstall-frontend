@@ -44,7 +44,7 @@ export default function Navbar() {
                 const userIdFromToken = payload.userId;
                 setCurrentUserId(userIdFromToken);
                 
-                const resDashboard = await fetch('http://localhost:3001/api/dashboard', {
+                const resDashboard = await fetch('http://mosstall-desa-production.up.railway.app/api/dashboard', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -68,7 +68,7 @@ export default function Navbar() {
                         setMandatoryReview(null);
                     }
 
-                    const resChats = await fetch('http://localhost:3001/api/chats', {
+                    const resChats = await fetch('http://mosstall-desa-production.up.railway.app/api/chats', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
 
