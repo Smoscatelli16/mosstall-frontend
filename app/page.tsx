@@ -28,7 +28,7 @@ async function getProductsData(resolvedParams: { [key: string]: string | undefin
   });
 
   try {
-    const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/products?${params.toString()}`, { cache: 'no-store' });
+    const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/products?${params.toString()}`, { cache: 'no-store' });
     if (!res.ok) return { products: [], pagination: { currentPage: 1, totalPages: 1, totalItems: 0 } };
     return await res.json();
   } catch (error) {
@@ -39,7 +39,7 @@ async function getProductsData(resolvedParams: { [key: string]: string | undefin
 // 3. Fetcher de Categorías (Corre en el Servidor)
 async function getCategories() {
   try {
-    const res = await fetch('http://mosstall-desa-production.up.railway.app/api/categories', { cache: 'no-store' });
+    const res = await fetch('https://mosstall-desa-production.up.railway.app/api/categories', { cache: 'no-store' });
     if (!res.ok) return [];
     return await res.json();
   } catch (error) {

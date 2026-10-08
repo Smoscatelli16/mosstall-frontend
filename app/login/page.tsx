@@ -18,7 +18,7 @@ export default function LoginPage() {
     console.log("1. Iniciando petición de login...");
 
     try {
-      const response = await fetch('http://mosstall-desa-production.up.railway.app/api/auth/login', {
+      const response = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

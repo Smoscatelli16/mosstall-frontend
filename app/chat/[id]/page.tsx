@@ -91,7 +91,7 @@ export default function ChatRoomPage() {
         if (!token) return;
 
         try {
-            const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/chat/${transactionId}`, {
+            const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/chat/${transactionId}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -122,7 +122,7 @@ export default function ChatRoomPage() {
 
     const loadMessages = async (roomId: string, token: string) => {
         try {
-            const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/chat/room/${roomId}/messages`, {
+            const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/chat/room/${roomId}/messages`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.status === 403 || res.status === 401) { handleSessionExpired(false); return; }
@@ -151,7 +151,7 @@ export default function ChatRoomPage() {
         setSending(true);
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch('http://mosstall-desa-production.up.railway.app/api/chat/message', {
+            const res = await fetch('https://mosstall-desa-production.up.railway.app/api/chat/message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ chatRoomId: chatData.id, content: newMessage })
@@ -167,7 +167,7 @@ export default function ChatRoomPage() {
         setActionLoading(true);
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch('http://mosstall-desa-production.up.railway.app/api/chat/offer', {
+            const res = await fetch('https://mosstall-desa-production.up.railway.app/api/chat/offer', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -195,7 +195,7 @@ export default function ChatRoomPage() {
         setActionLoading(true);
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${chatData.transaction.id}/simulate-payment`, {
+            const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/transactions/${chatData.transaction.id}/simulate-payment`, {
                 method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -215,7 +215,7 @@ export default function ChatRoomPage() {
         setActionLoading(true);
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${chatData.transaction.id}/confirm-delivery`, {
+            const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/transactions/${chatData.transaction.id}/confirm-delivery`, {
                 method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -233,7 +233,7 @@ export default function ChatRoomPage() {
         setActionLoading(true);
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${chatData.transaction.id}/dispute`, {
+            const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/transactions/${chatData.transaction.id}/dispute`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reason: disputeReason.trim() })

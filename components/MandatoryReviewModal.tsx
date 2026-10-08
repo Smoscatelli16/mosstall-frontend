@@ -47,7 +47,7 @@ export default function MandatoryReviewModal() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://mosstall-desa-production.up.railway.app/api/user/dashboard', {
+      const res = await fetch('https://mosstall-desa-production.up.railway.app/api/user/dashboard', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -69,7 +69,7 @@ export default function MandatoryReviewModal() {
     const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch('http://mosstall-desa-production.up.railway.app/api/reviews', {
+      const res = await fetch('https://mosstall-desa-production.up.railway.app/api/reviews', {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ export default function MandatoryReviewModal() {
     const token = localStorage.getItem('token');
 
     try {
-        await fetch('http://mosstall-desa-production.up.railway.app/api/reports', {
+        await fetch('https://mosstall-desa-production.up.railway.app/api/reports', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',

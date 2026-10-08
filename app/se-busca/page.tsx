@@ -31,7 +31,7 @@ export default function SeBuscaPage() {
 
   const fetchNeeds = async () => {
     try {
-      const res = await fetch('http://mosstall-desa-production.up.railway.app/api/needs');
+      const res = await fetch('https://mosstall-desa-production.up.railway.app/api/needs');
       if (!res.ok) throw new Error('Error al cargar las necesidades');
       const data = await res.json();
       setNeeds(data);
@@ -57,7 +57,7 @@ export default function SeBuscaPage() {
         return;
       }
 
-      const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/chat/${needId}`, {
+      const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/chat/${needId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -93,7 +93,7 @@ export default function SeBuscaPage() {
         return;
       }
 
-      const res = await fetch('http://mosstall-desa-production.up.railway.app/api/needs', {
+      const res = await fetch('https://mosstall-desa-production.up.railway.app/api/needs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

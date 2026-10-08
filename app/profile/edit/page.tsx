@@ -37,8 +37,8 @@ export default function EditProfilePage() {
       try {
         // Ejecutamos ambas llamadas en paralelo para optimizar tiempos
         const [profileRes, bankingRes] = await Promise.all([
-            fetch('http://mosstall-desa-production.up.railway.app/api/user/profile', { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch('http://mosstall-desa-production.up.railway.app/api/user/banking', { headers: { 'Authorization': `Bearer ${token}` } })
+            fetch('https://mosstall-desa-production.up.railway.app/api/user/profile', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('https://mosstall-desa-production.up.railway.app/api/user/banking', { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         if (profileRes.ok) {
@@ -123,7 +123,7 @@ export default function EditProfilePage() {
     const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch('http://mosstall-desa-production.up.railway.app/api/user/profile', {
+      const res = await fetch('https://mosstall-desa-production.up.railway.app/api/user/profile', {
         method: 'PUT',
         headers: { 
             'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ export default function EditProfilePage() {
     const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch('http://mosstall-desa-production.up.railway.app/api/user/banking', {
+      const res = await fetch('https://mosstall-desa-production.up.railway.app/api/user/banking', {
         method: 'PATCH',
         headers: { 
             'Content-Type': 'application/json',

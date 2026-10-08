@@ -119,7 +119,7 @@ export default function ProductDetailPage() {
           setError(null);
           setPurchaseMessage('');
 
-          const response = await fetch(`http://mosstall-desa-production.up.railway.app/api/products/${productId}`);
+          const response = await fetch(`https://mosstall-desa-production.up.railway.app/api/products/${productId}`);
 
           if (!response.ok) {
             const data = await response.json();
@@ -199,7 +199,7 @@ export default function ProductDetailPage() {
     setPurchaseMessage('Enviando solicitud de trabajo...');
 
     try {
-        const response = await fetch('http://mosstall-desa-production.up.railway.app/api/transactions', {
+        const response = await fetch('https://mosstall-desa-production.up.railway.app/api/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ productId: productId })
@@ -230,7 +230,7 @@ export default function ProductDetailPage() {
 
     setIsAsking(true);
     try {
-        const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/products/${productId}/questions`, {
+        const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/products/${productId}/questions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ content: newQuestion })
@@ -245,7 +245,7 @@ export default function ProductDetailPage() {
     if (!replyContent.trim()) return;
     const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/questions/${questionId}/answer`, {
+        const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/questions/${questionId}/answer`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ answer: replyContent })
@@ -259,7 +259,7 @@ export default function ProductDetailPage() {
     if (!window.confirm("¿Seguro que quieres eliminar esta pregunta?")) return;
     const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/questions/${questionId}`, {
+        const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/questions/${questionId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -272,7 +272,7 @@ export default function ProductDetailPage() {
     if (!window.confirm("¿Quieres eliminar tu respuesta?")) return;
     const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/questions/${questionId}/answer`, {
+        const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/questions/${questionId}/answer`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });

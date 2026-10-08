@@ -51,7 +51,7 @@ export default function AdminDashboardPage() {
     }
 
     try {
-      const response = await fetch('http://mosstall-desa-production.up.railway.app/api/transactions/disputes?limit=50', {
+      const response = await fetch('https://mosstall-desa-production.up.railway.app/api/transactions/disputes?limit=50', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -100,7 +100,7 @@ export default function AdminDashboardPage() {
     const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${selectedDisputeId}/resolve-dispute`, {
+      const response = await fetch(`https://mosstall-desa-production.up.railway.app/api/transactions/${selectedDisputeId}/resolve-dispute`, {
         method: 'PATCH',
         headers: { 
           'Authorization': `Bearer ${token}`,

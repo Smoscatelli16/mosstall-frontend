@@ -37,7 +37,7 @@ export default function CheckoutPage() {
       const token = localStorage.getItem('token');
       try {
         // Intento 1: Buscar como Producto
-        const prodRes = await fetch(`http://mosstall-desa-production.up.railway.app/api/products/${genericId}`);
+        const prodRes = await fetch(`https://mosstall-desa-production.up.railway.app/api/products/${genericId}`);
         if (prodRes.ok) {
           const product = await prodRes.json();
           setCheckoutData({
@@ -53,7 +53,7 @@ export default function CheckoutPage() {
 
         // Intento 2: Buscar como Transacción (Para el Mercado Inverso)
         if (token) {
-            const txRes = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${genericId}`, {
+            const txRes = await fetch(`https://mosstall-desa-production.up.railway.app/api/transactions/${genericId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (txRes.ok) {
@@ -100,7 +100,7 @@ export default function CheckoutPage() {
         : { transactionId: checkoutData?.id, paymentGateway: gateway };
 
       try {
-          const res = await fetch('http://mosstall-desa-production.up.railway.app/api/transactions', {
+          const res = await fetch('https://mosstall-desa-production.up.railway.app/api/transactions', {
               method: 'POST',
               headers: { 
                   'Content-Type': 'application/json',

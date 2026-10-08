@@ -27,7 +27,7 @@ function SuccessProcessor() {
                 const token = localStorage.getItem('token');
                 
                 // Consultamos a nuestro backend el estado de la orden
-                const res = await fetch(`http://mosstall-desa-production.up.railway.app/api/transactions/${externalReference}`, {
+                const res = await fetch(`https://mosstall-desa-production.up.railway.app/api/transactions/${externalReference}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 

@@ -81,7 +81,7 @@ export default function PublishPage() {
       if (!token) { router.push('/login'); return; }
       
       try {
-        const res = await fetch('http://mosstall-desa-production.up.railway.app/api/user/stores', {
+        const res = await fetch('https://mosstall-desa-production.up.railway.app/api/user/stores', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -143,7 +143,7 @@ export default function PublishPage() {
       const token = localStorage.getItem('token');
 
       try {
-          const res = await fetch('http://mosstall-desa-production.up.railway.app/api/stores', {
+          const res = await fetch('https://mosstall-desa-production.up.railway.app/api/stores', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -181,7 +181,7 @@ export default function PublishPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://mosstall-desa-production.up.railway.app/api/categories');
+        const res = await fetch('https://mosstall-desa-production.up.railway.app/api/categories');
         if (res.ok) {
           const data = await res.json();
           setCategories(data);
@@ -400,7 +400,7 @@ export default function PublishPage() {
     };
 
     try {
-      const response = await fetch('http://mosstall-desa-production.up.railway.app/api/products', {
+      const response = await fetch('https://mosstall-desa-production.up.railway.app/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload),
