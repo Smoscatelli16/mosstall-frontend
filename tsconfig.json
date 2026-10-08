@@ -18,11 +18,10 @@
         "name": "next"
       }
     ],
-
-    // --- ¡CORRECCIÓN APLICADA AQUÍ! ---
-    "baseUrl": ".", // 1. El punto de partida (está bien)
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"] // 2. El atajo ahora apunta a la raíz (./) en lugar de ./src/
+      "@/*": ["./*"] 
     }
   },
   "include": [

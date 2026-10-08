@@ -1,13 +1,12 @@
 // src/app/register/page.tsx
-
 "use client";
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // <-- 1. IMPORTAR ROUTER
+import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
-  const router = useRouter(); // <-- 2. INICIALIZAR ROUTER
+  const router = useRouter();
 
   // --- Estados ---
   const [email, setEmail] = useState('');
@@ -15,13 +14,15 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   
   const [message, setMessage] = useState('');
-  const [isSuccess, setIsSuccess] = useState(false); // Para cambiar color del mensaje
+  const [isSuccess, setIsSuccess] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
 
   // --- Manejador de Envío ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(''); 
     setIsSuccess(false);
+    setIsLoading(true);
 
     try {
       const response = await fetch('http://localhost:3001/api/auth/register', {
@@ -43,51 +44,59 @@ export default function RegisterPage() {
         setPassword('');
         setName('');
 
-        // --- 3. REDIRECCIÓN AUTOMÁTICA ---
         setTimeout(() => {
             router.push('/login');
-        }, 2000); // Espera 2 segundos y redirige
+        }, 2000); 
 
       } else {
         setIsSuccess(false);
         setMessage(`Error: ${data.error}`);
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Error de conexión:', error);
       setMessage('Error: No se pudo conectar con el servidor.');
+      setIsLoading(false);
     }
   };
 
   // --- Renderizado ---
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-900 text-white">
-      <div className="w-full max-w-md rounded-lg bg-gray-800 p-8 shadow-lg border border-gray-700">
-        <h1 className="mb-6 text-center text-3xl font-bold">Crear cuenta en MossTall</h1>
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 text-gray-900 font-sans">
+      <div className="w-full max-w-md rounded-[2rem] bg-white p-10 shadow-xl border border-gray-100">
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Cabecera Luminosa */}
+        <div className="text-center mb-8">
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">Crear tu cuenta</h1>
+            <p className="text-gray-500 font-medium">Únete a Mission Vende y opera seguro</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Campo de Nombre */}
           <div>
-            <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-300">Nombre</label>
+            <label htmlFor="name" className="mb-2 block text-sm font-bold text-gray-700">Nombre Completo</label>
             <input
               type="text"
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 outline-none"
-              placeholder="Tu nombre completo"
+              disabled={isLoading}
+              className="w-full rounded-xl border border-gray-200 bg-slate-50 p-4 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 focus:ring-[#1a237e]/20 outline-none transition-all disabled:opacity-50"
+              placeholder="Juan Pérez"
               required
             />
           </div>
 
           {/* Campo de Email */}
           <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-300">Email</label>
+            <label htmlFor="email" className="mb-2 block text-sm font-bold text-gray-700">Email</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 outline-none"
+              disabled={isLoading}
+              className="w-full rounded-xl border border-gray-200 bg-slate-50 p-4 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 focus:ring-[#1a237e]/20 outline-none transition-all disabled:opacity-50"
               placeholder="nombre@ejemplo.com"
               required
             />
@@ -95,13 +104,14 @@ export default function RegisterPage() {
 
           {/* Campo de Contraseña */}
           <div>
-            <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-300">Contraseña</label>
+            <label htmlFor="password" className="mb-2 block text-sm font-bold text-gray-700">Contraseña</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-gray-600 bg-gray-700 p-3 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 outline-none"
+              disabled={isLoading}
+              className="w-full rounded-xl border border-gray-200 bg-slate-50 p-4 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 focus:ring-[#1a237e]/20 outline-none transition-all disabled:opacity-50"
               placeholder="••••••••"
               required
             />
@@ -110,25 +120,32 @@ export default function RegisterPage() {
           {/* Botón de Envío */}
           <button
             type="submit"
-            className="w-full rounded-lg bg-blue-600 px-5 py-3 text-center font-bold text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-800 transition-colors mt-2"
+            disabled={isLoading}
+            className={`w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2
+              ${isLoading 
+                ? 'bg-gray-400 cursor-wait' 
+                : 'bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 focus:ring-4 focus:ring-[#1a237e]/30 shadow-lg shadow-[#1a237e]/20'
+              }`}
           >
-            Registrarse
+            {isLoading ? 'Registrando...' : 'Registrarme'}
           </button>
         </form>
 
         {/* Mensaje de éxito o error */}
         {message && (
-          <div className={`mt-4 p-3 rounded-lg text-center text-sm font-bold ${isSuccess ? 'bg-green-900/50 text-green-300 border border-green-700' : 'bg-red-900/50 text-red-300 border border-red-700'}`}>
+          <div className={`mt-6 p-4 rounded-xl text-center text-sm font-bold animate-in fade-in zoom-in duration-300 ${isSuccess ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-[#d50000] border border-red-100'}`}>
             {message}
           </div>
         )}
 
-        <p className="mt-6 text-center text-sm text-gray-400">
-          ¿Ya tenés una cuenta?{' '}
-          <Link href="/login" className="font-medium text-blue-400 hover:text-blue-300 hover:underline">
-            Iniciá sesión acá
-          </Link>
-        </p>
+        <div className="mt-8 pt-6 text-center">
+          <p className="text-sm text-gray-500 font-medium">
+            ¿Ya tenés una cuenta?{' '}
+            <Link href="/login" className="font-bold text-[#1a237e] hover:text-[#d50000] transition-colors underline-offset-2 hover:underline">
+              Iniciá sesión acá
+            </Link>
+          </p>
+        </div>
       </div>
     </main>
   );

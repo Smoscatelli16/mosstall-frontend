@@ -1,27 +1,21 @@
-// Este archivo es la página de Login: http://localhost:3000/login
-
+// src/app/login/page.tsx
 "use client";
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // <-- ¡CRÍTICO! Hook de navegación
 
 export default function LoginPage() {
-  
-  // Instanciamos el router para poder redirigir
-  const router = useRouter();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  
-  // Nuevo estado para controlar la interfaz durante la petición
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
-    setIsLoading(true); // 1. Bloqueamos la UI al empezar
+    setIsLoading(true);
+
+    console.log("1. Iniciando petición de login...");
 
     try {
       const response = await fetch('http://localhost:3001/api/auth/login', {
@@ -30,80 +24,88 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log("2. Respuesta recibida. Status:", response.status);
       const data = await response.json();
 
       if (response.ok) {
-        // 2. ¡Éxito!
-        setMessage('¡Bienvenido! Ingresando a MossTall...');
+        console.log("3. Login exitoso. Guardando token en LocalStorage...");
+        setMessage('¡Bienvenido! Ingresando a Mission Vende...');
         
-        // Guardamos el token
-        localStorage.setItem('token', data.token);
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          console.log("4. Token guardado correctamente:", data.token.substring(0, 15) + "...");
+        } else {
+          console.warn("⚠️ Advertencia: El backend no devolvió un token en 'data.token'");
+        }
 
-        // 3. REDIRECCIÓN AUTOMÁTICA
-        router.push('/');
-        router.refresh(); // Opcional: Fuerza un refresco de los componentes de servidor (Navbar)
-
-        // Nota: NO ponemos setIsLoading(false) aquí para que el botón siga
-        // mostrando "Ingresando..." mientras la página cambia.
+        // Le damos 1.5 segundos a la interfaz para respirar antes de forzar el salto
+        setTimeout(() => {
+          console.log("5. Ejecutando redirección al Home...");
+          window.location.assign('/');
+        }, 1500);
 
       } else {
-        // Error de credenciales
+        console.error("3. Error en credenciales:", data.error);
         setMessage(`Error: ${data.error}`);
-        setIsLoading(false); // Desbloqueamos para que intente de nuevo
+        setIsLoading(false); 
       }
 
     } catch (error) {
-      console.error('Error de conexión:', error);
+      console.error('Error de conexión crítico:', error);
       setMessage('Error: No se pudo conectar con el servidor.');
       setIsLoading(false);
     }
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-900 text-white">
-      <div className="w-full max-w-md rounded-lg bg-gray-800 p-8 shadow-lg border border-gray-700">
-        <h1 className="mb-6 text-center text-3xl font-bold text-blue-400">MossTall</h1>
-        <h2 className="mb-6 text-center text-xl font-medium text-gray-200">Iniciar Sesión</h2>
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 text-gray-900 font-sans">
+      <div className="w-full max-w-md rounded-[2rem] bg-white p-10 shadow-xl border border-gray-100">
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Campo de Email */}
+        {/* Cabecera / Logo */}
+        <div className="flex flex-col items-center justify-center mb-8">
+            <div className="h-16 w-16 bg-[#1a237e] rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg mb-4">
+                MV
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Mission Vende</h1>
+            <p className="text-gray-500 font-medium mt-1">Iniciar Sesión</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-300">Email</label>
+            <label htmlFor="email" className="mb-2 block text-sm font-bold text-gray-700">Email</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading} // Bloqueado si está cargando
-              className="w-full rounded-md border border-gray-600 bg-gray-700 p-3 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              disabled={isLoading}
+              className="w-full rounded-xl border border-gray-200 bg-slate-50 p-4 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 focus:ring-[#1a237e]/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="tu@email.com"
               required
             />
           </div>
 
-          {/* Campo de Contraseña */}
           <div>
-            <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-300">Contraseña</label>
+            <label htmlFor="password" className="mb-2 block text-sm font-bold text-gray-700">Contraseña</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
-              className="w-full rounded-md border border-gray-600 bg-gray-700 p-3 text-white focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-xl border border-gray-200 bg-slate-50 p-4 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 focus:ring-[#1a237e]/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="••••••••"
               required
             />
           </div>
 
-          {/* Botón de Envío con Estado de Carga */}
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full rounded-lg px-5 py-3 text-center font-bold text-white transition-all transform 
+            className={`w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2
               ${isLoading 
-                ? 'bg-blue-800 cursor-wait' 
-                : 'bg-blue-600 hover:bg-blue-700 hover:scale-[1.02] focus:ring-4 focus:ring-blue-800 shadow-lg shadow-blue-900/50'
+                ? 'bg-gray-400 cursor-wait' 
+                : 'bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 focus:ring-4 focus:ring-[#1a237e]/30 shadow-lg shadow-[#1a237e]/20'
               }`}
           >
             {isLoading ? (
@@ -120,19 +122,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Mensaje de Feedback */}
         {message && (
-          <div className={`mt-6 p-3 rounded text-center text-sm font-medium animate-fade-in
-            ${message.includes('Error') ? 'bg-red-900/30 text-red-300 border border-red-800' : 'bg-green-900/30 text-green-300 border border-green-800'}
+          <div className={`mt-6 p-4 rounded-xl text-center text-sm font-bold animate-in fade-in zoom-in duration-300
+            ${message.includes('Error') ? 'bg-red-50 text-[#d50000] border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'}
           `}>
             {message}
           </div>
         )}
 
-        <div className="mt-8 border-t border-gray-700 pt-6 text-center">
-          <p className="text-sm text-gray-400">
-            ¿No tenés una cuenta en MossTall?{' '}
-            <Link href="/" className="font-medium text-blue-400 hover:text-blue-300 hover:underline transition-colors">
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+          <p className="text-sm text-gray-500 font-medium">
+            ¿No tenés una cuenta en Mission Vende?{' '}
+            <Link href="/register" className="font-bold text-[#1a237e] hover:text-[#d50000] transition-colors underline-offset-2 hover:underline">
               Registrate acá
             </Link>
           </p>

@@ -1,26 +1,22 @@
 // src/app/layout.tsx
-
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Quicksand } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import MandatoryReviewModal from "@/components/MandatoryReviewModal";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Nueva tipografía corporativa "Mission Vende": Geométrica, limpia y amigable.
+const quicksand = Quicksand({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-quicksand",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "MossTall", // Título limpio como pediste
+  title: "Mission Vende",
   description: "Tu dinero protegido hasta que recibís el producto. Comprá, vendé y contratá servicios con garantía de confianza en Misiones.",
   icons: {
-    icon: "/logo-icon.svg", // Icono SVG nuevo
+    icon: "/logo-icon.svg", 
   },
 };
 
@@ -32,11 +28,16 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-white`}
+        // FONDO CLARO ESTRICTO (Brief #034)
+        className={`${quicksand.variable} font-sans antialiased bg-slate-50 text-gray-900 min-h-screen flex flex-col`}
       >
         <Navbar />
         <MandatoryReviewModal />
-        {children}
+        
+        {/* Contenedor principal que empuja el footer hacia abajo si hubiera uno */}
+        <div className="flex-grow flex flex-col">
+          {children}
+        </div>
       </body>
     </html>
   );
