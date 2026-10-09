@@ -127,14 +127,25 @@ export default function PublishPage() {
       }
   };
 
+  // --- Validación Estricta de Datos Bancarios ---
+  const validateCBU = (cbu: string) => {
+      // Remover todo lo que no sea número
+      const cleanCBU = cbu.replace(/\D/g, '');
+      return cleanCBU.length === 22;
+  };
+
   const handleCreateStore = async (e: React.FormEvent) => {
       e.preventDefault();
       setStoreMessage('');
+      
       if(!newStoreName || !newStoreCBU) {
           setStoreMessage("Completa el nombre y el CBU/CVU."); return;
       }
-      if(newStoreCBU.length < 22) {
-          setStoreMessage("El CBU/CVU debe tener 22 números."); return;
+      
+      // Validación rígida pre-submit (Escrow Daemon Defense)
+      if (!validateCBU(newStoreCBU)) {
+          setStoreMessage("Error Crítico: El CBU/CVU debe contener EXACTAMENTE 22 números.");
+          return;
       }
 
       setIsSubmittingStore(true);
@@ -147,7 +158,7 @@ export default function PublishPage() {
               body: JSON.stringify({
                   name: newStoreName,
                   type: newStoreType,
-                  cbu: newStoreCBU
+                  cbu: newStoreCBU.replace(/\D/g, '') // Enviar versión sanitizada
               })
           });
 
@@ -436,7 +447,7 @@ export default function PublishPage() {
       <div className="container mx-auto max-w-3xl">
         
         <Link href="/dashboard" className="text-gray-500 hover:text-[#1a237e] mb-6 block w-fit font-bold transition-colors">
-           &larr; Volver al panel
+            &larr; Volver al panel
         </Link>
 
         {isCreatingStore ? (
@@ -460,14 +471,48 @@ export default function PublishPage() {
                             <option value="DIGITAL_CREATOR">Venta de Infoproductos / Creador</option>
                         </select>
                     </div>
-                    <div>
-                        <label className="mb-1 block text-xs font-bold text-gray-500 uppercase">CBU / CVU de Cobro (22 dígitos)</label>
-                        <input type="number" value={newStoreCBU} onChange={e=>setNewStoreCBU(e.target.value)} required placeholder="1234567890123456789012" className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 font-medium focus:border-[#1a237e] focus:ring-2 outline-none"/>
+                    
+                    {/* Campo blindado de CBU/CVU */}
+                    <div className="relative">
+                        <label className="mb-1 flex items-center justify-between text-xs font-bold text-gray-500 uppercase">
+                            <span>CBU / CVU de Cobro</span>
+                            <span className={`text-[10px] ${newStoreCBU.replace(/\D/g, '').length === 22 ? 'text-green-600' : 'text-red-500'}`}>
+                                {newStoreCBU.replace(/\D/g, '').length}/22 dígitos
+                            </span>
+                        </label>
+                        <input 
+                            type="text" 
+                            maxLength={22}
+                            value={newStoreCBU} 
+                            onChange={e => setNewStoreCBU(e.target.value.replace(/\D/g, ''))} // Bloquea todo menos números instantáneamente
+                            onBlur={() => {
+                                if (newStoreCBU && newStoreCBU.replace(/\D/g, '').length !== 22) {
+                                    setStoreMessage("El CBU/CVU debe tener exactamente 22 números.");
+                                } else {
+                                    setStoreMessage("");
+                                }
+                            }}
+                            required 
+                            placeholder="Ej: 0000003100000000000000" 
+                            className={`w-full rounded-xl border-2 bg-slate-50 p-3.5 text-gray-900 font-bold focus:ring-2 outline-none transition-colors
+                                ${newStoreCBU && newStoreCBU.replace(/\D/g, '').length !== 22 ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-[#1a237e] focus:ring-[#1a237e]/20'}
+                            `}
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1 font-medium leading-tight">
+                            ⚠️ Asegúrate de ingresarlo correctamente. Un error aquí impedirá que el sistema automático te transfiera tus ganancias.
+                        </p>
                     </div>
-                    <button type="submit" disabled={isSubmittingStore} className="w-full bg-[#1a237e] hover:bg-[#121858] text-white font-black py-4 rounded-xl shadow-lg disabled:opacity-50 transition-transform hover:-translate-y-0.5 mt-2">
+
+                    <button 
+                        type="submit" 
+                        disabled={isSubmittingStore || newStoreCBU.replace(/\D/g, '').length !== 22} 
+                        className={`w-full text-white font-black py-4 rounded-xl shadow-lg transition-transform mt-2
+                            ${isSubmittingStore || newStoreCBU.replace(/\D/g, '').length !== 22 ? 'bg-gray-400 cursor-not-allowed opacity-50' : 'bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5'}
+                        `}
+                    >
                         {isSubmittingStore ? 'Creando Perfil...' : 'Comenzar a Vender 🚀'}
                     </button>
-                    {storeMessage && <p className="text-center text-[#d50000] text-sm font-bold mt-2">{storeMessage}</p>}
+                    {storeMessage && <p className="text-center text-[#d50000] text-sm font-bold mt-2 animate-pulse">{storeMessage}</p>}
                     
                     {myStores.length > 0 && (
                         <button type="button" onClick={() => setIsCreatingStore(false)} className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-bold mt-4">
@@ -478,7 +523,6 @@ export default function PublishPage() {
             </div>
         ) : (
           <div className="rounded-3xl bg-white p-6 md:p-10 shadow-sm border border-gray-100">
-            {/* CORRECCIÓN TASK 1.1: FLEX COL EN MOBILE Y AJUSTE DE TAMAÑOS */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <h1 className="text-3xl font-black text-gray-900 tracking-tight">Crear Publicación</h1>
                 <div className="bg-purple-50 border border-purple-100 rounded-xl px-4 py-2 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full md:w-auto overflow-hidden">
