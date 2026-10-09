@@ -1,7 +1,8 @@
-// src/app/profile/[id]/page.tsx
+// app/profile/[id]/page.tsx
 import { Metadata } from 'next';
 import Link from 'next/link';
 import ProductCard from '../../components/ProductCard';
+import ClientGallery from './ClientGallery'; // Importación del nuevo visor de imágenes
 
 // --- TIPOS ---
 type Review = {
@@ -38,7 +39,8 @@ type UserProfile = {
 // --- FETCHER PARA SERVER COMPONENTS ---
 async function getProfileData(userId: string): Promise<UserProfile | null> {
     try {
-        const url = `http://127.0.0.1:3001/api/user/${userId}/public-profile`;
+        // BRIEF #042: Corrección de Bloqueo de Enrutamiento en Producción
+        const url = `https://mosstall-desa-production.up.railway.app/api/user/${userId}/public-profile`;
         const res = await fetch(url, { cache: 'no-store' });
         
         if (!res.ok) {
@@ -152,29 +154,19 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                         </section>
                     )}
 
+                    {/* BRIEF #042: Integración de Lightbox en Credenciales */}
                     {profile?.certifications && profile.certifications.length > 0 && (
                         <section>
                             <h2 className="text-xl font-black text-[#1a237e] mb-4 flex items-center gap-2">📜 Credenciales Verificadas</h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-                                {profile.certifications.map((img, idx) => (
-                                    <div key={idx} className="aspect-video rounded-xl overflow-hidden border border-gray-200 hover:border-[#1a237e]/50 hover:shadow-md transition-all cursor-pointer bg-white shadow-sm">
-                                        <img src={img} alt={`Certificado ${idx}`} className="w-full h-full object-cover" />
-                                    </div>
-                                ))}
-                            </div>
+                            <ClientGallery images={profile.certifications} type="certifications" />
                         </section>
                     )}
 
+                    {/* BRIEF #042: Integración de Lightbox en Portafolio */}
                     {profile?.portfolioImages && profile.portfolioImages.length > 0 && (
                         <section className="pt-4">
                             <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">📸 Portafolio de Trabajos</h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-                                {profile.portfolioImages.map((img, idx) => (
-                                    <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-gray-200 hover:border-[#1a237e]/50 transition-all group cursor-pointer shadow-sm bg-white">
-                                        <img src={img} alt={`Trabajo ${idx}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                    </div>
-                                ))}
-                            </div>
+                            <ClientGallery images={profile.portfolioImages} type="portfolio" />
                         </section>
                     )}
 
@@ -194,7 +186,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                                 {user.stores.map((store) => {
                                     if (!store.products || store.products.length === 0) return null;
 
-                                    // Lógica estricta de 5 productos
                                     const displayedProducts = store.products.slice(0, 5);
                                     const remaining = store.products.length - 5;
 
@@ -203,16 +194,15 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                                             
                                             {/* --- CABECERA ESTÉTICA CON DEGRADADO --- */}
                                             <div className="relative mb-6 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg border border-gray-100/50 group/banner">
-                                                {/* Fondos y degradados adaptativos */}
-                                                <div className={`absolute inset-0 bg-gradient-to-r ${
+                                                {/* ACTUALIZADO A bg-linear-to-r para Tailwind v4 */}
+                                                <div className={`absolute inset-0 bg-linear-to-r ${
                                                     store.type === 'PRODUCT_STORE' 
                                                         ? 'from-[#1a237e] via-blue-800 to-indigo-900' 
                                                         : store.type === 'SERVICE_PROFESSIONAL'
-                                                        ? 'from-slate-800 via-gray-800 to-[#1a237e]' // Tono más sobrio para servicios
-                                                        : 'from-[#311b92] via-purple-800 to-[#d50000]/80' // Tono vibrante para digital
+                                                        ? 'from-slate-800 via-gray-800 to-[#1a237e]' 
+                                                        : 'from-[#311b92] via-purple-800 to-[#d50000]/80' 
                                                 } z-0`}></div>
                                                 
-                                                {/* Brillos decorativos para darle profundidad */}
                                                 <div className="absolute -top-24 -right-24 w-72 h-72 bg-white opacity-10 rounded-full blur-3xl z-0 pointer-events-none"></div>
                                                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-400 opacity-20 rounded-full blur-2xl z-0 pointer-events-none"></div>
 
@@ -246,7 +236,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                                                     </div>
                                                 ))}
 
-                                                {/* Tarjeta dinámica interactiva de Ver Más */}
                                                 {remaining > 0 && (
                                                     <Link href={`/tienda/${store.id}`} className="min-w-[260px] max-w-[260px] snap-start shrink-0 border-2 border-dashed border-[#1a237e]/30 rounded-3xl flex flex-col items-center justify-center bg-[#1a237e]/5 hover:bg-[#1a237e]/10 transition-all text-[#1a237e] group cursor-pointer shadow-sm hover:shadow-md">
                                                         <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm mb-4 group-hover:scale-110 transition-transform">

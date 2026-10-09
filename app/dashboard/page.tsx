@@ -25,13 +25,12 @@ export default function DashboardPage() {
   const [myProducts, setMyProducts] = useState<any[]>([]); 
   const [myNeeds, setMyNeeds] = useState<any[]>([]); 
   const [chats, setChats] = useState<any[]>([]); 
-  const [myStores, setMyStores] = useState<any[]>([]); // BRIEF #040: Estado para tiendas
+  const [myStores, setMyStores] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // BRIEF #040: Agregamos 'tiendas' a las pestañas activas
   const [activeTab, setActiveTab] = useState<'compras' | 'ventas' | 'publicaciones' | 'pedidos' | 'preguntas' | 'mensajes' | 'tiendas'>('compras');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -69,7 +68,7 @@ export default function DashboardPage() {
           return;
         }
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Fallo del servidor (HTTP ${response.status}). Verifica la ruta de tu backend.`);
+        throw new Error(errorData.error || `Fallo del servidor (HTTP ${response.status}).`);
       }
       
       const dashboardData = await response.json();
@@ -81,12 +80,10 @@ export default function DashboardPage() {
       if (chatRes.ok) {
         setChats(await chatRes.json());
       }
-
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
+    // NOTA: Se eliminó setLoading(false) de aquí para paralelizar.
   }, [router]);
 
   const fetchMyProducts = useCallback(async () => {
@@ -111,7 +108,6 @@ export default function DashboardPage() {
     } catch (err) { console.error("Error cargando necesidades", err); }
   }, []);
 
-  // BRIEF #040: Fetcher para Tiendas / Perfiles Comerciales
   const fetchMyStores = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -123,11 +119,19 @@ export default function DashboardPage() {
     } catch (err) { console.error("Error cargando tiendas", err); }
   }, []);
 
+  // BRIEF #042: Paralelización de Promesas para optimizar Tiempos de Carga
   useEffect(() => {
-    fetchDashboard();
-    fetchMyProducts();
-    fetchMyNeeds();
-    fetchMyStores(); // BRIEF #040: Ejecutar fetch
+    const loadAllData = async () => {
+        setLoading(true);
+        await Promise.all([
+            fetchDashboard(),
+            fetchMyProducts(),
+            fetchMyNeeds(),
+            fetchMyStores()
+        ]);
+        setLoading(false);
+    };
+    loadAllData();
   }, [fetchDashboard, fetchMyProducts, fetchMyNeeds, fetchMyStores]);
 
   const handleCardClick = (transactionId: string) => {
@@ -147,8 +151,6 @@ export default function DashboardPage() {
       if (res.ok) {
           alert("¡Gracias por confirmar! Fondos liberados.");
           await fetchDashboard(); 
-          
-          // EL DISPARADOR GLOBAL
           window.dispatchEvent(new Event('forceReviewCheck'));
       } else {
           const d = await res.json();
@@ -308,12 +310,42 @@ export default function DashboardPage() {
       } catch (error) { alert("Error de conexión"); }
   };
 
-  if (loading) return <main className="min-h-screen bg-slate-50 p-8 flex items-center justify-center font-sans"><div className="text-xl font-bold text-[#1a237e] animate-pulse">Cargando tu panel...</div></main>;
+  // BRIEF #042: Skeleton Loader (Suspense Pattern UI)
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
+        <div className="container mx-auto max-w-5xl space-y-8 animate-pulse">
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <div>
+              <div className="h-8 bg-gray-200 rounded-md w-64 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded-md w-48"></div>
+            </div>
+            <div className="flex gap-2">
+               <div className="h-10 bg-gray-200 rounded-full w-24"></div>
+               <div className="h-10 bg-gray-200 rounded-full w-24"></div>
+            </div>
+          </div>
+          <div className="h-32 bg-gray-200 rounded-3xl w-full"></div>
+          <div className="flex gap-4 border-b border-gray-200 pb-3 overflow-hidden">
+            <div className="h-6 bg-gray-200 rounded-md w-24"></div>
+            <div className="h-6 bg-gray-200 rounded-md w-28"></div>
+            <div className="h-6 bg-gray-200 rounded-md w-24"></div>
+            <div className="h-6 bg-gray-200 rounded-md w-32"></div>
+          </div>
+          <div className="h-64 bg-white border border-gray-100 rounded-3xl w-full"></div>
+        </div>
+      </main>
+    );
+  }
+
   if (error) return <main className="min-h-screen bg-slate-50 p-8 text-center font-sans"><p className="text-[#d50000] font-bold text-xl">{error}</p></main>;
   if (!data) return null;
 
   const totalQuestions = (data.notifications.pendingQuestions?.length || 0) + (data.notifications.answersReceived?.length || 0);
   const totalUnreadMessages = chats.reduce((acc, chat) => acc + (chat._count?.messages || 0), 0);
+
+  // BRIEF #042: Lógica de Roles (Renderizado Condicional)
+  const hasCommercialProfile = myStores.length > 0;
 
   const orderActions = {
     onRelease: handleReleaseFunds,
@@ -333,7 +365,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-gray-900 p-4 md:p-8 font-sans">
-      <MandatoryReviewModal /> {/* <-- EL EFECTO UBER ESTÁ ACTIVO AQUÍ */}
+      <MandatoryReviewModal /> 
       
       <div className="container mx-auto max-w-5xl">
         
@@ -358,18 +390,24 @@ export default function DashboardPage() {
           <button onClick={() => setActiveTab('compras')} className={`pb-3 px-6 text-sm font-bold whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'compras' ? 'text-[#1a237e] border-[#1a237e]' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
             🛍️ Mis Compras ({data.orders.purchases.length})
           </button>
-          <button onClick={() => setActiveTab('ventas')} className={`pb-3 px-6 text-sm font-bold whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'ventas' ? 'text-[#1a237e] border-[#1a237e]' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
-            💰 Mis Ventas ({data.orders.sales.length})
-          </button>
-          <button onClick={() => setActiveTab('publicaciones')} className={`pb-3 px-6 text-sm font-bold whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'publicaciones' ? 'text-[#1a237e] border-[#1a237e]' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
-            📦 Publicaciones ({myProducts.length})
-          </button>
+          
+          {/* BRIEF #042: Filtro UI de Roles */}
+          {hasCommercialProfile && (
+            <>
+              <button onClick={() => setActiveTab('ventas')} className={`pb-3 px-6 text-sm font-bold whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'ventas' ? 'text-[#1a237e] border-[#1a237e]' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
+                💰 Mis Ventas ({data.orders.sales.length})
+              </button>
+              <button onClick={() => setActiveTab('publicaciones')} className={`pb-3 px-6 text-sm font-bold whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'publicaciones' ? 'text-[#1a237e] border-[#1a237e]' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
+                📦 Publicaciones ({myProducts.length})
+              </button>
+              <button onClick={() => setActiveTab('tiendas')} className={`pb-3 px-6 text-sm font-bold whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'tiendas' ? 'text-[#1a237e] border-[#1a237e]' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
+                🏪 Mis Tiendas ({myStores.length})
+              </button>
+            </>
+          )}
+
           <button onClick={() => setActiveTab('pedidos')} className={`pb-3 px-6 text-sm font-bold whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'pedidos' ? 'text-[#1a237e] border-[#1a237e]' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
             🔄 Pedidos ({myNeeds.length})
-          </button>
-          {/* BRIEF #040: Tab de Perfiles / Tiendas */}
-          <button onClick={() => setActiveTab('tiendas')} className={`pb-3 px-6 text-sm font-bold whitespace-nowrap border-b-[3px] transition-colors ${activeTab === 'tiendas' ? 'text-[#1a237e] border-[#1a237e]' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
-            🏪 Mis Tiendas ({myStores.length})
           </button>
           <button onClick={() => setActiveTab('preguntas')} className={`pb-3 px-6 text-sm font-bold whitespace-nowrap border-b-[3px] transition-colors relative ${activeTab === 'preguntas' ? 'text-[#1a237e] border-[#1a237e]' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
             💬 Preguntas {totalQuestions > 0 && <span className="ml-2 bg-[#d50000] text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">{totalQuestions}</span>}
@@ -393,7 +431,8 @@ export default function DashboardPage() {
                 <OrderList orders={data.orders.purchases} type="purchases" processingId={processingId} actions={orderActions} />
             </div>
           )}
-          {activeTab === 'ventas' && (
+
+          {hasCommercialProfile && activeTab === 'ventas' && (
              <div className="cursor-pointer" onClick={(e) => {
                 const target = e.target as HTMLElement;
                 if(target.closest('button') || target.closest('a')) return;
@@ -406,9 +445,11 @@ export default function DashboardPage() {
                 <OrderList orders={data.orders.sales} type="sales" processingId={processingId} actions={orderActions} />
             </div>
           )}
-          {activeTab === 'publicaciones' && (
+
+          {hasCommercialProfile && activeTab === 'publicaciones' && (
             <InventoryList products={myProducts} processingId={processingId} actions={inventoryActions} />
           )}
+
           {activeTab === 'pedidos' && (
             <div className="p-6">
                 {myNeeds.length === 0 ? (
@@ -446,8 +487,7 @@ export default function DashboardPage() {
             </div>
           )}
           
-          {/* BRIEF #040: Pestaña de Mis Tiendas */}
-          {activeTab === 'tiendas' && (
+          {hasCommercialProfile && activeTab === 'tiendas' && (
             <div className="p-6 md:p-8">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-black text-gray-900">Perfiles Comerciales</h2>
@@ -456,53 +496,45 @@ export default function DashboardPage() {
                     </Link>
                 </div>
 
-                {myStores.length === 0 ? (
-                    <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-gray-200">
-                        <p className="text-5xl mb-4">🏪</p>
-                        <p className="text-gray-500 font-bold mb-4">Aún no has creado ningún perfil comercial.</p>
-                        <Link href="/publicar" className="inline-block bg-[#1a237e] text-white px-6 py-2 rounded-xl font-black shadow-md hover:-translate-y-0.5 transition-transform">Crear uno ahora</Link>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {myStores.map(store => (
-                            <div key={store.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                                <div className={`absolute top-0 left-0 w-full h-1.5 ${
-                                    store.type === 'PRODUCT_STORE' ? 'bg-[#1a237e]' : 
-                                    store.type === 'SERVICE_PROFESSIONAL' ? 'bg-slate-800' : 'bg-purple-600'
-                                }`}></div>
-                                
-                                <div className="flex justify-between items-start mb-5 pt-2">
-                                    <div>
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block flex items-center gap-1.5">
-                                            {store.type === 'PRODUCT_STORE' && '🛍️ Tienda de Productos'}
-                                            {store.type === 'SERVICE_PROFESSIONAL' && '🛠️ Servicios Profesionales'}
-                                            {store.type === 'DIGITAL_CREATOR' && '💻 Creador Digital'}
-                                        </span>
-                                        <h3 className="text-xl font-black text-gray-900 tracking-tight">{store.name}</h3>
-                                    </div>
-                                    <Link href={`/tienda/${store.id}`} className="text-[#1a237e] bg-blue-50 hover:bg-[#1a237e] hover:text-white h-10 w-10 flex items-center justify-center rounded-full transition-colors shadow-sm" title="Ver Tienda pública">
-                                        👁️
-                                    </Link>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {myStores.map(store => (
+                        <div key={store.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                            <div className={`absolute top-0 left-0 w-full h-1.5 ${
+                                store.type === 'PRODUCT_STORE' ? 'bg-[#1a237e]' : 
+                                store.type === 'SERVICE_PROFESSIONAL' ? 'bg-slate-800' : 'bg-purple-600'
+                            }`}></div>
+                            
+                            <div className="flex justify-between items-start mb-5 pt-2">
+                                <div>
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block flex items-center gap-1.5">
+                                        {store.type === 'PRODUCT_STORE' && '🛍️ Tienda de Productos'}
+                                        {store.type === 'SERVICE_PROFESSIONAL' && '🛠️ Servicios Profesionales'}
+                                        {store.type === 'DIGITAL_CREATOR' && '💻 Creador Digital'}
+                                    </span>
+                                    <h3 className="text-xl font-black text-gray-900 tracking-tight">{store.name}</h3>
                                 </div>
-                                
-                                <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-gray-100 flex flex-col gap-1">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Datos de Cobro Recaudación</p>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-lg">🏦</span>
-                                        <p className="font-bold text-sm text-gray-800">
-                                            {store.cbu ? `CBU/CVU: ${store.cbu}` : store.cvu ? `CVU: ${store.cvu}` : <span className="text-[#d50000]">⚠️ Sin configurar (Requerido)</span>}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-between items-center text-xs font-bold text-gray-400 border-t border-gray-50 pt-3">
-                                    <span>Creada el: {new Date(store.createdAt).toLocaleDateString()}</span>
-                                    <span className="text-green-600 bg-green-50 px-2 py-1 rounded-md">Perfil Activo</span>
+                                <Link href={`/tienda/${store.id}`} className="text-[#1a237e] bg-blue-50 hover:bg-[#1a237e] hover:text-white h-10 w-10 flex items-center justify-center rounded-full transition-colors shadow-sm" title="Ver Tienda pública">
+                                    👁️
+                                </Link>
+                            </div>
+                            
+                            <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-gray-100 flex flex-col gap-1">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Datos de Cobro Recaudación</p>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg">🏦</span>
+                                    <p className="font-bold text-sm text-gray-800">
+                                        {store.cbu ? `CBU/CVU: ${store.cbu}` : store.cvu ? `CVU: ${store.cvu}` : <span className="text-[#d50000]">⚠️ Sin configurar (Requerido)</span>}
+                                    </p>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                )}
+
+                            <div className="flex justify-between items-center text-xs font-bold text-gray-400 border-t border-gray-50 pt-3">
+                                <span>Creada el: {new Date(store.createdAt).toLocaleDateString()}</span>
+                                <span className="text-green-600 bg-green-50 px-2 py-1 rounded-md">Perfil Activo</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
           )}
 
