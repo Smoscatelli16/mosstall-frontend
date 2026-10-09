@@ -91,13 +91,11 @@ export default function PublishPage() {
           
           if (data.length > 0) {
               setSelectedStoreId(data[0].id);
-              // Auto-ajustar el ListingType según la tienda seleccionada
               autoSetListingType(data[0].type);
           } else {
-              setIsCreatingStore(true); // Obligamos a crear una
+              setIsCreatingStore(true); 
           }
         } else {
-            // Si el endpoint falla o no existe aún, abrimos la creación por default
             setIsCreatingStore(true);
         }
       } catch (error) {
@@ -162,10 +160,9 @@ export default function PublishPage() {
               setStoreMessage('');
           } else {
               const d = await res.json();
-              // BRIEF #041: Válvula de Escape - Validación Profesional
               if (res.status === 403 && d.error.includes('profesional')) {
                   alert(d.error);
-                  router.push('/perfil'); // Redirigir al perfil profesional
+                  router.push('/perfil'); 
               } else {
                   setStoreMessage(`Error: ${d.error || 'No se pudo crear el perfil.'}`);
               }
@@ -309,10 +306,7 @@ export default function PublishPage() {
   }, [selectedCategoryName]);
 
   const selectGenericOther = () => {
-      const searchTerms = type === 'SERVICIO' 
-        ? ['otros servicios'] 
-        : ['otros productos', 'varios', 'otras cosas'];
-
+      const searchTerms = ['otros', 'varios', 'otras'];
       const allSubCategories = categories.flatMap(c => c.children || []);
       let target: Category | undefined;
 
@@ -322,20 +316,25 @@ export default function PublishPage() {
       }
 
       if (!target) {
-          const genericRoot = categories.find(c => c.name.toLowerCase().includes('varios') || c.name.toLowerCase().includes('otros /'));
+          const genericRoot = categories.find(c => c.name.toLowerCase().includes('varios') || c.name.toLowerCase().includes('otros'));
           if (genericRoot && genericRoot.children && genericRoot.children.length > 0) {
               target = genericRoot.children[0]; 
           }
       }
 
+      // Fallback extremo si la BD no tiene "otros/varios"
+      if (!target && categories.length > 0) {
+          target = categories[categories.length - 1];
+      }
+
       if (target) {
           setCategoryId(target.id);
-          setSelectedCategoryName(target.name);
-          setCategorySearch(target.name); 
+          setSelectedCategoryName('Otros (Especificar)');
+          setCategorySearch('Otros (Especificar)'); 
           setIsCategoryDropdownOpen(false);
+          setShowSuggestionInput(true);
       } else {
-          alert("Por favor selecciona la categoría 'Otros' manualmente de la lista.");
-          setCategorySearch('Otros'); 
+          alert("Error de conexión: No se pudo cargar el listado maestro de categorías.");
       }
   };
 
@@ -479,11 +478,12 @@ export default function PublishPage() {
             </div>
         ) : (
           <div className="rounded-3xl bg-white p-6 md:p-10 shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
+            {/* CORRECCIÓN TASK 1.1: FLEX COL EN MOBILE Y AJUSTE DE TAMAÑOS */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <h1 className="text-3xl font-black text-gray-900 tracking-tight">Crear Publicación</h1>
-                <div className="bg-purple-50 border border-purple-100 rounded-xl px-4 py-2 flex items-center gap-3">
-                    <span className="text-xs font-bold text-purple-800 uppercase">PERFIL ACTIVO:</span>
-                    <select value={selectedStoreId} onChange={handleStoreChange} className="bg-transparent text-[#1a237e] font-black text-sm outline-none cursor-pointer">
+                <div className="bg-purple-50 border border-purple-100 rounded-xl px-4 py-2 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full md:w-auto overflow-hidden">
+                    <span className="text-xs font-bold text-purple-800 uppercase shrink-0">PERFIL ACTIVO:</span>
+                    <select value={selectedStoreId} onChange={handleStoreChange} className="bg-transparent text-[#1a237e] font-black text-sm outline-none cursor-pointer w-full max-w-full truncate">
                         {myStores.map(s => <option key={s.id} value={s.id}>{s.name} ({s.type === 'PRODUCT_STORE' ? 'Productos' : s.type === 'SERVICE_PROFESSIONAL' ? 'Servicios' : 'Digital'})</option>)}
                         <option value="NEW" className="text-purple-600 bg-purple-50 font-bold">+ Crear Nuevo Perfil</option>
                     </select>
@@ -607,7 +607,9 @@ export default function PublishPage() {
                       ))
                     ) : (
                       <div className="p-5 text-center bg-slate-50">
-                          <p className="text-gray-500 text-sm mb-3 font-medium">No encontramos "{categorySearch}"</p>
+                          <p className="text-gray-500 text-sm mb-3 font-medium">
+                              {categorySearch ? `No encontramos "${categorySearch}"` : "No hay resultados"}
+                          </p>
                           <button 
                               type="button"
                               onClick={selectGenericOther}
