@@ -1,8 +1,8 @@
-// app/profile/[id]/page.tsx
+// src/app/profile/[id]/page.tsx
 import { Metadata } from 'next';
 import Link from 'next/link';
 import ProductCard from '../../components/ProductCard';
-import ClientGallery from './ClientGallery'; // Importación del nuevo visor de imágenes
+import ClientGallery from './ClientGallery'; 
 
 // --- TIPOS ---
 type Review = {
@@ -39,9 +39,12 @@ type UserProfile = {
 // --- FETCHER PARA SERVER COMPONENTS ---
 async function getProfileData(userId: string): Promise<UserProfile | null> {
     try {
-        // BRIEF #042: Corrección de Bloqueo de Enrutamiento en Producción
+        // TASK 4.3: Optimización ISR (Incremental Static Regeneration)
+        // Se cambió cache: 'no-store' por revalidate: 30.
+        // Esto elimina el cuello de botella sirviendo el perfil desde la Edge Network
+        // y lo revalida en segundo plano cada 30 segundos si hay cambios.
         const url = `https://mosstall-desa-production.up.railway.app/api/user/${userId}/public-profile`;
-        const res = await fetch(url, { cache: 'no-store' });
+        const res = await fetch(url, { next: { revalidate: 30 } });
         
         if (!res.ok) {
             return null;
@@ -135,7 +138,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
             <div className="container mx-auto max-w-5xl px-4 mt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
                 
-                {/* --- COLUMNA IZQUIERDA (Biografía, Portafolio y Vidrieras por Tienda) --- */}
+                {/* --- COLUMNA IZQUIERDA --- */}
                 <div className="md:col-span-2 space-y-8">
                     
                     {profile?.biography && (
@@ -154,7 +157,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                         </section>
                     )}
 
-                    {/* BRIEF #042: Integración de Lightbox en Credenciales */}
                     {profile?.certifications && profile.certifications.length > 0 && (
                         <section>
                             <h2 className="text-xl font-black text-[#1a237e] mb-4 flex items-center gap-2">📜 Credenciales Verificadas</h2>
@@ -162,7 +164,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                         </section>
                     )}
 
-                    {/* BRIEF #042: Integración de Lightbox en Portafolio */}
                     {profile?.portfolioImages && profile.portfolioImages.length > 0 && (
                         <section className="pt-4">
                             <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">📸 Portafolio de Trabajos</h2>
@@ -194,7 +195,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                                             
                                             {/* --- CABECERA ESTÉTICA CON DEGRADADO --- */}
                                             <div className="relative mb-6 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg border border-gray-100/50 group/banner">
-                                                {/* ACTUALIZADO A bg-linear-to-r para Tailwind v4 */}
                                                 <div className={`absolute inset-0 bg-linear-to-r ${
                                                     store.type === 'PRODUCT_STORE' 
                                                         ? 'from-[#1a237e] via-blue-800 to-indigo-900' 
