@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,8 +16,6 @@ export default function LoginPage() {
     setMessage('');
     setIsLoading(true);
 
-    console.log("1. Iniciando petición de login...");
-
     try {
       const response = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/login', {
         method: 'POST',
@@ -24,34 +23,24 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      console.log("2. Respuesta recibida. Status:", response.status);
       const data = await response.json();
 
       if (response.ok) {
-        console.log("3. Login exitoso. Guardando token en LocalStorage...");
         setMessage('¡Bienvenido! Ingresando a Mission Vende...');
         
         if (data.token) {
           localStorage.setItem('token', data.token);
-          console.log("4. Token guardado correctamente:", data.token.substring(0, 15) + "...");
-        } else {
-          console.warn("⚠️ Advertencia: El backend no devolvió un token en 'data.token'");
         }
 
-        // Le damos 1.5 segundos a la interfaz para respirar antes de forzar el salto
         setTimeout(() => {
-          console.log("5. Ejecutando redirección al Home...");
           window.location.assign('/');
         }, 1500);
 
       } else {
-        console.error("3. Error en credenciales:", data.error);
         setMessage(`Error: ${data.error}`);
         setIsLoading(false); 
       }
-
     } catch (error) {
-      console.error('Error de conexión crítico:', error);
       setMessage('Error: No se pudo conectar con el servidor.');
       setIsLoading(false);
     }
@@ -63,11 +52,17 @@ export default function LoginPage() {
         
         {/* Cabecera / Logo */}
         <div className="flex flex-col items-center justify-center mb-8">
-            <div className="h-16 w-16 bg-[#1a237e] rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg mb-4">
-                MV
-            </div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Mission Vende</h1>
-            <p className="text-gray-500 font-medium mt-1">Iniciar Sesión</p>
+            {/* TASK 5.2: Isologo central */}
+            <Image 
+                src="/isologo-color.png" 
+                alt="Mission Vende" 
+                width={140} 
+                height={140} 
+                className="w-[120px] md:w-[140px] h-auto object-contain mb-5"
+                priority
+            />
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">¡Hola de nuevo!</h1>
+            <p className="text-gray-500 font-medium mt-1">Iniciar Sesión en tu cuenta</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-5">
