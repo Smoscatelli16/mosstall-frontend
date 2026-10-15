@@ -27,20 +27,20 @@ export const banners: BannerItem[] = [
     active: true,
   },
   // Añade nuevos banners aquí
-  {
-    id: 3,
-    imageUrlDesktop: '/banner-3.png',
-    imageUrlMobile: '/banner-3.png',
-    altText: 'Vende tu auto al mejor precio',
-    linkUrl: '/',
-    active: true,
-  },
-  {
-    id: 4,
-    imageUrlDesktop: '/banner-4.jpeg',
-    imageUrlMobile: '/banner-4.jpeg',
-    altText: 'Compra Seguro en Misiones con Mission Vende',
-    linkUrl: '/se-busca',
-    active: true, // Cambiar a false para ocultar esta campaña
-  },
+  //{
+   // id: 3,
+   // imageUrlDesktop: '/banner-3.png',
+   // imageUrlMobile: '/banner-3.png',
+   // altText: 'Vende tu auto al mejor precio',
+   // linkUrl: '/',
+    //active: true,
+ // },//
+ // {
+  //  id: 4,
+    //imageUrlDesktop: '/banner-4.jpeg',
+   // imageUrlMobile: '/banner-4.jpeg',
+    //altText: 'Compra Seguro en Misiones con Mission Vende',
+    //linkUrl: '/se-busca',
+    //active: true, // Cambiar a false para ocultar esta campaña
+  //},
 ];

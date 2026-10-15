@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "Mission Vende",
   description: "Tu dinero protegido hasta que recibís el producto. Comprá, vendé y contratá servicios con garantía de confianza en Misiones.",
   icons: {
-    icon: "/logo-icon.svg", 
+    icon: "/iso-color.png", 
   },
 };
 
