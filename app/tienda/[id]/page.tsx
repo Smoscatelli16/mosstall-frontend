@@ -1,7 +1,7 @@
 // src/app/tienda/[id]/page.tsx
 import { Metadata } from 'next';
 import Link from 'next/link';
-import ProductCard from '../../components/ProductCard';
+import ProductCard from '../../../components/ProductCard';
 
 // --- TIPOS ---
 type ProfessionalProfile = {

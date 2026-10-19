@@ -1,9 +1,9 @@
 // src/app/page.tsx
 import { Metadata } from 'next';
 import Link from 'next/link';
-import ProductCard from './components/ProductCard';
-import StorefrontFilters from './components/StorefrontFilters';
-import HeroCarousel from './components/HeroCarousel';
+import ProductCard from '../components/ProductCard';
+import StorefrontFilters from '../components/StorefrontFilters';
+import HeroCarousel from '../components/HeroCarousel';
 
 // Definimos el tipo asíncrono que exige Next.js 15+
 type SearchParams = Promise<{ [key: string]: string | undefined }>;

@@ -83,7 +83,6 @@ export default function DashboardPage() {
     } catch (err: any) {
       setError(err.message);
     }
-    // NOTA: Se eliminó setLoading(false) de aquí para paralelizar.
   }, [router]);
 
   const fetchMyProducts = useCallback(async () => {
@@ -310,6 +309,35 @@ export default function DashboardPage() {
       } catch (error) { alert("Error de conexión"); }
   };
 
+  // --- TASK 8.3: Exportación de Métricas CSV ---
+  const handleExportCSV = () => {
+      if (!data) return;
+      const rows = [
+          ['Tipo', 'ID Transacción', 'Fecha', 'Producto/Servicio', 'Monto', 'Estado']
+      ];
+
+      if (data.orders.sales) {
+          data.orders.sales.forEach((sale: any) => {
+              rows.push(['Venta', sale.id, new Date(sale.createdAt).toLocaleDateString(), `"${sale.product?.title || 'N/A'}"`, sale.amount, sale.state]);
+          });
+      }
+      
+      if (data.orders.purchases) {
+          data.orders.purchases.forEach((purchase: any) => {
+              rows.push(['Compra', purchase.id, new Date(purchase.createdAt).toLocaleDateString(), `"${purchase.product?.title || 'N/A'}"`, purchase.amount, purchase.state]);
+          });
+      }
+
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `reporte_metricas_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
+
   // BRIEF #042: Skeleton Loader (Suspense Pattern UI)
   if (loading) {
     return (
@@ -321,6 +349,7 @@ export default function DashboardPage() {
               <div className="h-4 bg-gray-200 rounded-md w-48"></div>
             </div>
             <div className="flex gap-2">
+               <div className="h-10 bg-gray-200 rounded-full w-24"></div>
                <div className="h-10 bg-gray-200 rounded-full w-24"></div>
                <div className="h-10 bg-gray-200 rounded-full w-24"></div>
             </div>
@@ -374,7 +403,11 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-black text-gray-900 tracking-tight">Mi Panel de Control</h1>
             <p className="text-gray-500 font-medium mt-1">Gestiona tus operaciones y métricas financieras</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+              {/* Botón de Exportar Métricas (Task 8.3) */}
+              <button onClick={handleExportCSV} className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-full font-bold transition-all shadow-md hover:-translate-y-0.5 text-sm">
+                📊 Exportar Reporte
+              </button>
               <Link href="/publicar" className="bg-[#1a237e] hover:bg-[#121858] text-white px-5 py-2.5 rounded-full font-bold transition-all shadow-md hover:-translate-y-0.5 text-sm">
                 📦 Vender
               </Link>

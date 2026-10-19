@@ -1,7 +1,7 @@
 // src/app/profile/[id]/page.tsx
 import { Metadata } from 'next';
 import Link from 'next/link';
-import ProductCard from '../../components/ProductCard';
+import ProductCard from '../../../components/ProductCard';
 import ClientGallery from './ClientGallery'; 
 
 // --- TIPOS ---
@@ -39,10 +39,6 @@ type UserProfile = {
 // --- FETCHER PARA SERVER COMPONENTS ---
 async function getProfileData(userId: string): Promise<UserProfile | null> {
     try {
-        // TASK 4.3: Optimización ISR (Incremental Static Regeneration)
-        // Se cambió cache: 'no-store' por revalidate: 30.
-        // Esto elimina el cuello de botella sirviendo el perfil desde la Edge Network
-        // y lo revalida en segundo plano cada 30 segundos si hay cambios.
         const url = `https://mosstall-desa-production.up.railway.app/api/user/${userId}/public-profile`;
         const res = await fetch(url, { next: { revalidate: 30 } });
         
@@ -57,7 +53,7 @@ async function getProfileData(userId: string): Promise<UserProfile | null> {
     }
 }
 
-// --- METADATA DINÁMICA (SEO) ---
+// --- METADATA DINÁMICA (SEO Y OPEN GRAPH - TASK 8.1) ---
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
     const resolvedParams = await params;
     const user = await getProfileData(resolvedParams.id);
@@ -66,11 +62,46 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         return { title: 'Usuario no encontrado | Mission Vende' };
     }
 
+    const title = `Catálogo de ${user.name || 'Usuario'} | Mission Vende`;
+    const description = user.professionalProfile?.biography 
+        ? user.professionalProfile.biography.substring(0, 160)
+        : `Descubre los productos y servicios ofrecidos por ${user.name || 'Usuario'} en Mission Vende.`;
+        
+    // Buscamos la primera imagen del portafolio o de los productos para usarla en WhatsApp
+    let ogImage = 'https://mosstall-desa-production.up.railway.app/default-og.png'; // Reemplazar por logo oficial
+    if (user.professionalProfile?.portfolioImages && user.professionalProfile.portfolioImages.length > 0) {
+        ogImage = user.professionalProfile.portfolioImages[0];
+    } else if (user.stores?.[0]?.products?.[0]?.images?.[0]) {
+        ogImage = user.stores[0].products[0].images[0];
+    }
+
+    const profileUrl = `https://mosstall-desa-production.up.railway.app/profile/${resolvedParams.id}`;
+
     return {
-        title: `Catálogo de ${user.name || 'Usuario'} | Mission Vende`,
-        description: user.professionalProfile?.biography 
-            ? user.professionalProfile.biography.substring(0, 160)
-            : `Descubre los productos y servicios ofrecidos por ${user.name || 'Usuario'} en Mission Vende.`,
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+            url: profileUrl,
+            siteName: 'Mission Vende',
+            images: [
+                {
+                    url: ogImage,
+                    width: 1200,
+                    height: 630,
+                    alt: `Perfil comercial de ${user.name}`,
+                }
+            ],
+            locale: 'es_AR',
+            type: 'profile',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+            images: [ogImage],
+        },
     };
 }
 

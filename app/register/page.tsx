@@ -1,16 +1,23 @@
 // src/app/register/page.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js'; // TASK 6.1
 
-// Reemplaza con tus variables de entorno públicas
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Definición global para el callback de Turnstile
+declare global {
+  interface Window {
+    onTurnstileSuccess: (token: string) => void;
+  }
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -23,12 +30,20 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [dni, setDni] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   
-  // TASK 6.4: Checkbox de Blindaje Legal
+  // UX: Controladores
+  const [showPassword, setShowPassword] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // TASK 49.4: Integración Callback Turnstile
+  useEffect(() => {
+    window.onTurnstileSuccess = (token: string) => {
+      setTurnstileToken(token);
+    };
+  }, []);
 
   // TASK 6.1: Función para registro con Google
   const handleGoogleSignUp = async () => {
@@ -37,7 +52,7 @@ export default function RegisterPage() {
           const { error } = await supabase.auth.signInWithOAuth({
               provider: 'google',
               options: {
-                  redirectTo: `${window.location.origin}/auth/callback`, // Ajustar ruta de callback
+                  redirectTo: `${window.location.origin}/auth/callback`,
               }
           });
           if (error) throw error;
@@ -47,23 +62,60 @@ export default function RegisterPage() {
       }
   };
 
-  const handleNextStep = (e: React.FormEvent) => {
+  // TASK 49.3: Sanitización de Input Telefónico
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    val = val.replace(/\D/g, ''); // Remover todo lo que no sea número
+    if (val.startsWith('0')) val = val.substring(1); // Remover 0 inicial
+    if (val.startsWith('15')) val = val.substring(2); // Remover 15 intermedio/inicial
+    setPhone(val);
+  };
+
+  // TASK 50.4: Disparar envío de OTP por WhatsApp antes de pasar al Paso 2
+  const handleNextStep = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
     
-    if (!name || !email || !password || !dni || !phone) {
+    if (!name || !email || !password || !phone) {
         setMessage('Todos los campos son obligatorios para operar de forma segura.');
         return;
     }
-    setStep(2);
+
+    if (!turnstileToken) {
+        setMessage('Verificando seguridad... por favor aguardá un momento.');
+        return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: `+549${phone}` }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStep(2);
+      } else {
+        setMessage(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error enviando OTP:', error);
+      setMessage('Error: No se pudo conectar con el servidor.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // TASK 50.4: Verificar OTP primero, y luego registrar
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(''); 
     setIsSuccess(false);
     
-    // TASK 6.4: Validación estricta de términos en frontend
     if (!termsAccepted) {
         setMessage('Debes aceptar los Términos de Fideicomiso para operar.');
         return;
@@ -77,27 +129,43 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/register', {
+      // 1. Verificamos el OTP generado por nuestro propio motor
+      const verifyResponse = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Enviamos el booleano termsAccepted al backend
-        body: JSON.stringify({ email, name, password, dni, phone, otp, termsAccepted }),
+        body: JSON.stringify({ phone: `+549${phone}`, code: otp }),
       });
 
-      const data = await response.json();
+      const verifyData = await verifyResponse.json();
 
-      if (response.ok) {
+      if (!verifyResponse.ok) {
+        setIsSuccess(false);
+        setMessage(`Error: ${verifyData.error}`);
+        setIsLoading(false);
+        return; // Detenemos el flujo si el código es inválido
+      }
+
+      // 2. Si el OTP es válido, procedemos a registrar el usuario
+      const registerResponse = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, password, phone: `+549${phone}`, otp, termsAccepted, turnstileToken }),
+      });
+
+      const registerData = await registerResponse.json();
+
+      if (registerResponse.ok) {
         setIsSuccess(true);
-        setMessage(`¡Identidad verificada, ${data.name}! Redirigiendo al login...`);
+        setMessage(`¡Identidad verificada, ${registerData.name}! Redirigiendo al login...`);
         
-        setEmail(''); setPassword(''); setName(''); setDni(''); setPhone(''); setOtp(''); setTermsAccepted(false);
+        setEmail(''); setPassword(''); setName(''); setPhone(''); setOtp(''); setTermsAccepted(false);
 
         setTimeout(() => {
             router.push('/login');
         }, 2500); 
       } else {
         setIsSuccess(false);
-        setMessage(`Error: ${data.error}`);
+        setMessage(`Error: ${registerData.error}`);
         setIsLoading(false);
       }
     } catch (error) {
@@ -109,7 +177,9 @@ export default function RegisterPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 text-gray-900 font-sans p-4 py-12">
-      {/* Corrección Tailwind: rounded-4xl */}
+      {/* Script Cloudflare Turnstile */}
+      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+
       <div className="w-full max-w-md rounded-4xl bg-white p-8 md:p-10 shadow-xl border border-gray-100">
         
         <div className="flex flex-col items-center justify-center text-center mb-8">
@@ -155,42 +225,59 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label htmlFor="name" className="mb-1 block text-sm font-bold text-gray-700">Nombre Completo (Tal como figura en DNI)</label>
-                <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none" placeholder="Juan Pérez" required />
+                {/* TASK 49.3: Ajuste de copy */}
+                <label htmlFor="name" className="mb-1 block text-sm font-bold text-gray-700">Nombre y Apellido</label>
+                <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none transition-all" placeholder="Juan Pérez" required />
               </div>
 
               <div>
-                <label htmlFor="dni" className="mb-1 block text-sm font-bold text-gray-700">DNI (Sin puntos)</label>
-                <input type="number" id="dni" value={dni} onChange={(e) => setDni(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none" placeholder="12345678" required />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="mb-1 block text-sm font-bold text-gray-700">Teléfono Celular (Para validación SMS/WhatsApp)</label>
-                <input type="tel" id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none" placeholder="+54 9 11 1234-5678" required />
+                <label htmlFor="phone" className="mb-1 block text-sm font-bold text-gray-700">Teléfono Celular (WhatsApp/SMS)</label>
+                {/* TASK 49.3: Badge +54 e input formateado */}
+                <div className="flex items-stretch shadow-sm rounded-xl">
+                  <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-100 text-gray-500 font-bold text-sm select-none">
+                      +54 9
+                  </span>
+                  <input type="tel" id="phone" value={phone} onChange={handlePhoneChange} disabled={isLoading} className="w-full rounded-r-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none transition-all" placeholder="Cód. Área + Nro sin 15 (Ej: 3764123456)" required />
+                </div>
               </div>
 
               <div>
                 <label htmlFor="email" className="mb-1 block text-sm font-bold text-gray-700">Email</label>
-                <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none" placeholder="nombre@ejemplo.com" required />
+                <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none transition-all" placeholder="nombre@ejemplo.com" required />
               </div>
 
               <div>
                 <label htmlFor="password" className="mb-1 block text-sm font-bold text-gray-700">Contraseña</label>
-                <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none" placeholder="••••••••" required />
+                {/* TASK 49.3: Toggle Password */}
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} id="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none transition-all pr-12" placeholder="••••••••" required />
+                  {password.length > 0 && (
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" title={showPassword ? "Ocultar" : "Mostrar"}>
+                      {showPassword ? '👁️' : '🔒'}
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <button type="submit" className="w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2 bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 shadow-lg">
-                Siguiente: Verificar Identidad ➜
+              {/* Widget Cloudflare Turnstile Invisible/Fricción Cero */}
+              <div className="cf-turnstile flex justify-center mt-2" data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'} data-callback="onTurnstileSuccess"></div>
+
+              <button type="submit" disabled={isLoading || !turnstileToken} className="w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2 bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 shadow-lg disabled:bg-gray-400 disabled:hover:translate-y-0 disabled:shadow-none">
+                {isLoading ? 'Aguardá un momento...' : 'Siguiente: Verificar Identidad ➜'}
               </button>
             </form>
         )}
 
         {step === 2 && (
             <form onSubmit={handleFinalSubmit} className="space-y-6 animate-in slide-in-from-right duration-300">
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
-                    <p className="text-sm font-bold text-[#1a237e]">Te enviamos un código de seguridad por WhatsApp/SMS al número:</p>
-                    <p className="text-lg font-black text-gray-900 mt-1">{phone}</p>
-                    <button type="button" onClick={() => setStep(1)} className="text-xs text-gray-500 hover:text-[#d50000] underline mt-2">¿Número incorrecto? Volver atrás</button>
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center relative">
+                    <p className="text-sm font-bold text-[#1a237e]">Te enviamos un código de seguridad por WhatsApp al número:</p>
+                    <p className="text-lg font-black text-gray-900 mt-1">+54 9 {phone}</p>
+                    
+                    {/* TASK 49.3: Botón de Navegación Reversible */}
+                    <button type="button" onClick={() => setStep(1)} className="text-xs font-bold text-gray-500 hover:text-[#1a237e] underline underline-offset-2 mt-3 block w-full transition-colors">
+                        ← ¿Número incorrecto? Volver y modificar datos
+                    </button>
                 </div>
 
                 <div>
@@ -198,16 +285,15 @@ export default function RegisterPage() {
                     <input type="text" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} disabled={isLoading} className="w-full rounded-xl border-2 border-gray-200 bg-slate-50 p-4 text-gray-900 text-3xl text-center font-black tracking-[0.5em] focus:border-[#1a237e] focus:ring-4 focus:ring-[#1a237e]/20 outline-none transition-all" placeholder="000000" required />
                 </div>
 
-                {/* TASK 6.4: Checkbox de Blindaje Legal */}
                 <div className="flex items-start gap-3 mt-4">
                     <input 
                         type="checkbox" 
                         id="terms" 
                         checked={termsAccepted}
                         onChange={(e) => setTermsAccepted(e.target.checked)}
-                        className="mt-1 h-5 w-5 rounded border-gray-300 text-[#1a237e] focus:ring-[#1a237e] transition-colors"
+                        className="mt-1 h-5 w-5 rounded border-gray-300 text-[#1a237e] focus:ring-[#1a237e] transition-colors cursor-pointer"
                     />
-                    <label htmlFor="terms" className="text-sm text-gray-600 font-medium leading-tight">
+                    <label htmlFor="terms" className="text-sm text-gray-600 font-medium leading-tight cursor-pointer">
                         Acepto los <Link href="/terminos" className="text-[#1a237e] font-bold hover:underline" target="_blank">Términos, Condiciones y Políticas de Fideicomiso</Link> de Mission Vende. Autorizo la gestión de fondos en transacciones del Mercado Inverso.
                     </label>
                 </div>

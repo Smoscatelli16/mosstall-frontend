@@ -4,7 +4,7 @@
 import React, { useCallback, useRef } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
-import { banners } from '../../config/banners';
+import { banners } from '../config/banners';
 
 export default function HeroCarousel() {
   // 1. Encapsulamos el plugin en un useRef para que React no destruya el temporizador en cada renderizado

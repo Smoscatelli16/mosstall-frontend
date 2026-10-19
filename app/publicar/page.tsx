@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import CreateStoreForm from '@/components/CreateStoreForm'; // Asegurate de que la ruta sea correcta según tu estructura
 
 type Category = {
   id: string;
@@ -29,13 +30,7 @@ export default function PublishPage() {
   const [hasCheckedStores, setHasCheckedStores] = useState(false);
   const [myStores, setMyStores] = useState<Store[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<string>('');
-  
-  // Estado para controlar si mostramos el mini-formulario de crear tienda
   const [isCreatingStore, setIsCreatingStore] = useState(false);
-  const [newStoreName, setNewStoreName] = useState('');
-  const [newStoreType, setNewStoreType] = useState<StoreType>('PRODUCT_STORE');
-  const [newStoreCBU, setNewStoreCBU] = useState('');
-  const [isSubmittingStore, setIsSubmittingStore] = useState(false);
 
   // --- ESTADOS DE DATOS (PUBLICACIÓN) ---
   const [categories, setCategories] = useState<Category[]>([]);
@@ -71,7 +66,6 @@ export default function PublishPage() {
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   const [message, setMessage] = useState('');
-  const [storeMessage, setStoreMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- 0. VALIDAR TIENDAS (EL NUEVO ONBOARDING) ---
@@ -127,62 +121,11 @@ export default function PublishPage() {
       }
   };
 
-  // --- Validación Estricta de Datos Bancarios ---
-  const validateCBU = (cbu: string) => {
-      // Remover todo lo que no sea número
-      const cleanCBU = cbu.replace(/\D/g, '');
-      return cleanCBU.length === 22;
-  };
-
-  const handleCreateStore = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setStoreMessage('');
-      
-      if(!newStoreName || !newStoreCBU) {
-          setStoreMessage("Completa el nombre y el CBU/CVU."); return;
-      }
-      
-      // Validación rígida pre-submit (Escrow Daemon Defense)
-      if (!validateCBU(newStoreCBU)) {
-          setStoreMessage("Error Crítico: El CBU/CVU debe contener EXACTAMENTE 22 números.");
-          return;
-      }
-
-      setIsSubmittingStore(true);
-      const token = localStorage.getItem('token');
-
-      try {
-          const res = await fetch('https://mosstall-desa-production.up.railway.app/api/stores', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({
-                  name: newStoreName,
-                  type: newStoreType,
-                  cbu: newStoreCBU.replace(/\D/g, '') // Enviar versión sanitizada
-              })
-          });
-
-          if (res.ok) {
-              const newStore = await res.json();
-              setMyStores([...myStores, newStore]);
-              setSelectedStoreId(newStore.id);
-              autoSetListingType(newStore.type);
-              setIsCreatingStore(false);
-              setStoreMessage('');
-          } else {
-              const d = await res.json();
-              if (res.status === 403 && d.error.includes('profesional')) {
-                  alert(d.error);
-                  router.push('/perfil'); 
-              } else {
-                  setStoreMessage(`Error: ${d.error || 'No se pudo crear el perfil.'}`);
-              }
-          }
-      } catch (error) {
-          setStoreMessage("Error de conexión al crear perfil.");
-      } finally {
-          setIsSubmittingStore(false);
-      }
+  const handleStoreCreated = (newStore: Store) => {
+      setMyStores(prev => [...prev, newStore]);
+      setSelectedStoreId(newStore.id);
+      autoSetListingType(newStore.type);
+      setIsCreatingStore(false);
   };
 
   // --- 1. CARGAR CATEGORÍAS ---
@@ -333,7 +276,6 @@ export default function PublishPage() {
           }
       }
 
-      // Fallback extremo si la BD no tiene "otros/varios"
       if (!target && categories.length > 0) {
           target = categories[categories.length - 1];
       }
@@ -451,76 +393,11 @@ export default function PublishPage() {
         </Link>
 
         {isCreatingStore ? (
-            <div className="rounded-3xl bg-white p-8 shadow-lg border border-purple-100 text-center flex flex-col items-center animate-in fade-in zoom-in duration-300">
-                <span className="text-6xl mb-4">🏪</span>
-                <h2 className="text-2xl font-black text-[#1a237e] mb-2">Crear Perfil Comercial</h2>
-                <p className="text-gray-600 mb-6 max-w-md font-medium">
-                    Antes de publicar, necesitamos configurar tu perfil. Este será el "Local" donde se agruparán tus publicaciones y métricas.
-                </p>
-
-                <form onSubmit={handleCreateStore} className="w-full max-w-sm text-left space-y-5">
-                    <div>
-                        <label className="mb-1 block text-xs font-bold text-gray-500 uppercase">Nombre de tu Tienda / Perfil</label>
-                        <input type="text" value={newStoreName} onChange={e=>setNewStoreName(e.target.value)} required placeholder="Ej: Electrónica Juan / Electricista Matriculado" className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 font-medium focus:border-[#1a237e] focus:ring-2 outline-none"/>
-                    </div>
-                    <div>
-                        <label className="mb-1 block text-xs font-bold text-gray-500 uppercase">Tipo de Actividad</label>
-                        <select value={newStoreType} onChange={e=>setNewStoreType(e.target.value as StoreType)} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-[#1a237e] font-black focus:border-[#1a237e] focus:ring-2 outline-none">
-                            <option value="PRODUCT_STORE">Venta de Productos Físicos</option>
-                            <option value="SERVICE_PROFESSIONAL">Servicios Profesionales</option>
-                            <option value="DIGITAL_CREATOR">Venta de Infoproductos / Creador</option>
-                        </select>
-                    </div>
-                    
-                    {/* Campo blindado de CBU/CVU */}
-                    <div className="relative">
-                        <label className="mb-1 flex items-center justify-between text-xs font-bold text-gray-500 uppercase">
-                            <span>CBU / CVU de Cobro</span>
-                            <span className={`text-[10px] ${newStoreCBU.replace(/\D/g, '').length === 22 ? 'text-green-600' : 'text-red-500'}`}>
-                                {newStoreCBU.replace(/\D/g, '').length}/22 dígitos
-                            </span>
-                        </label>
-                        <input 
-                            type="text" 
-                            maxLength={22}
-                            value={newStoreCBU} 
-                            onChange={e => setNewStoreCBU(e.target.value.replace(/\D/g, ''))} // Bloquea todo menos números instantáneamente
-                            onBlur={() => {
-                                if (newStoreCBU && newStoreCBU.replace(/\D/g, '').length !== 22) {
-                                    setStoreMessage("El CBU/CVU debe tener exactamente 22 números.");
-                                } else {
-                                    setStoreMessage("");
-                                }
-                            }}
-                            required 
-                            placeholder="Ej: 0000003100000000000000" 
-                            className={`w-full rounded-xl border-2 bg-slate-50 p-3.5 text-gray-900 font-bold focus:ring-2 outline-none transition-colors
-                                ${newStoreCBU && newStoreCBU.replace(/\D/g, '').length !== 22 ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-[#1a237e] focus:ring-[#1a237e]/20'}
-                            `}
-                        />
-                        <p className="text-[10px] text-gray-400 mt-1 font-medium leading-tight">
-                            ⚠️ Asegúrate de ingresarlo correctamente. Un error aquí impedirá que el sistema automático te transfiera tus ganancias.
-                        </p>
-                    </div>
-
-                    <button 
-                        type="submit" 
-                        disabled={isSubmittingStore || newStoreCBU.replace(/\D/g, '').length !== 22} 
-                        className={`w-full text-white font-black py-4 rounded-xl shadow-lg transition-transform mt-2
-                            ${isSubmittingStore || newStoreCBU.replace(/\D/g, '').length !== 22 ? 'bg-gray-400 cursor-not-allowed opacity-50' : 'bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5'}
-                        `}
-                    >
-                        {isSubmittingStore ? 'Creando Perfil...' : 'Comenzar a Vender 🚀'}
-                    </button>
-                    {storeMessage && <p className="text-center text-[#d50000] text-sm font-bold mt-2 animate-pulse">{storeMessage}</p>}
-                    
-                    {myStores.length > 0 && (
-                        <button type="button" onClick={() => setIsCreatingStore(false)} className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-bold mt-4">
-                            Cancelar y usar perfil existente
-                        </button>
-                    )}
-                </form>
-            </div>
+            <CreateStoreForm 
+                onSuccess={handleStoreCreated} 
+                canCancel={myStores.length > 0} 
+                onCancel={() => setIsCreatingStore(false)} 
+            />
         ) : (
           <div className="rounded-3xl bg-white p-6 md:p-10 shadow-sm border border-gray-100">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
