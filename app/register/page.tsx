@@ -62,11 +62,12 @@ export default function RegisterPage() {
       }
   };
 
-  // TASK 49.3: Sanitización de Input Telefónico
+  // TASK 49.3: Sanitización de Input Telefónico (Ajustado para el nuevo badge)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
     val = val.replace(/\D/g, ''); // Remover todo lo que no sea número
     if (val.startsWith('0')) val = val.substring(1); // Remover 0 inicial
+    if (val.startsWith('9')) val = val.substring(1); // Remover 9 inicial para evitar duplicación
     if (val.startsWith('15')) val = val.substring(2); // Remover 15 intermedio/inicial
     setPhone(val);
   };
@@ -225,17 +226,16 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                {/* TASK 49.3: Ajuste de copy */}
                 <label htmlFor="name" className="mb-1 block text-sm font-bold text-gray-700">Nombre y Apellido</label>
                 <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none transition-all" placeholder="Juan Pérez" required />
               </div>
 
               <div>
                 <label htmlFor="phone" className="mb-1 block text-sm font-bold text-gray-700">Teléfono Celular (WhatsApp/SMS)</label>
-                {/* TASK 49.3: Badge +54 e input formateado */}
                 <div className="flex items-stretch shadow-sm rounded-xl">
-                  <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-100 text-gray-500 font-bold text-sm select-none">
-                      +54 9
+                  {/* Badge unificado, sin saltos de línea */}
+                  <span className="inline-flex items-center justify-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-100 text-gray-600 font-black text-sm select-none shrink-0 whitespace-nowrap">
+                      🇦🇷 +54
                   </span>
                   <input type="tel" id="phone" value={phone} onChange={handlePhoneChange} disabled={isLoading} className="w-full rounded-r-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none transition-all" placeholder="Cód. Área + Nro sin 15 (Ej: 3764123456)" required />
                 </div>
@@ -248,7 +248,6 @@ export default function RegisterPage() {
 
               <div>
                 <label htmlFor="password" className="mb-1 block text-sm font-bold text-gray-700">Contraseña</label>
-                {/* TASK 49.3: Toggle Password */}
                 <div className="relative">
                   <input type={showPassword ? "text" : "password"} id="password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 placeholder-gray-400 focus:border-[#1a237e] focus:ring-2 outline-none transition-all pr-12" placeholder="••••••••" required />
                   {password.length > 0 && (
@@ -272,9 +271,8 @@ export default function RegisterPage() {
             <form onSubmit={handleFinalSubmit} className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center relative">
                     <p className="text-sm font-bold text-[#1a237e]">Te enviamos un código de seguridad por WhatsApp al número:</p>
-                    <p className="text-lg font-black text-gray-900 mt-1">+54 9 {phone}</p>
+                    <p className="text-lg font-black text-gray-900 mt-1">🇦🇷 +54 9 {phone}</p>
                     
-                    {/* TASK 49.3: Botón de Navegación Reversible */}
                     <button type="button" onClick={() => setStep(1)} className="text-xs font-bold text-gray-500 hover:text-[#1a237e] underline underline-offset-2 mt-3 block w-full transition-colors">
                         ← ¿Número incorrecto? Volver y modificar datos
                     </button>
