@@ -93,7 +93,7 @@ export default function RegisterPage() {
       const response = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `+549${phone}` }),
+        body: JSON.stringify({ phone: `+54${phone}` }), // CORREGIDO: Se eliminó el 9 fijo
       });
 
       const data = await response.json();
@@ -134,7 +134,7 @@ export default function RegisterPage() {
       const verifyResponse = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `+549${phone}`, code: otp }),
+        body: JSON.stringify({ phone: `+54${phone}`, code: otp }), // CORREGIDO: Se eliminó el 9 fijo
       });
 
       const verifyData = await verifyResponse.json();
@@ -150,7 +150,7 @@ export default function RegisterPage() {
       const registerResponse = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, password, phone: `+549${phone}`, otp, termsAccepted, turnstileToken }),
+        body: JSON.stringify({ email, name, password, phone: `+54${phone}`, otp, termsAccepted, turnstileToken }), // CORREGIDO: Se eliminó el 9 fijo
       });
 
       const registerData = await registerResponse.json();
@@ -181,7 +181,18 @@ export default function RegisterPage() {
       {/* Script Cloudflare Turnstile */}
       <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
 
-      <div className="w-full max-w-md rounded-4xl bg-white p-8 md:p-10 shadow-xl border border-gray-100">
+      <div className="w-full max-w-md rounded-4xl bg-white p-8 md:p-10 shadow-xl border border-gray-100 relative">
+        
+        {/* BOTÓN VOLVER EN LA PARTE SUPERIOR */}
+        {step === 2 && (
+          <button 
+            type="button" 
+            onClick={() => setStep(1)} 
+            className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center text-sm font-bold text-gray-400 hover:text-[#1a237e] transition-colors"
+          >
+            ← Volver
+          </button>
+        )}
         
         <div className="flex flex-col items-center justify-center text-center mb-8">
             <Image 
@@ -189,7 +200,7 @@ export default function RegisterPage() {
                 alt="Mission Vende" 
                 width={120} 
                 height={120} 
-                className="w-[100px] md:w-[120px] h-auto object-contain mb-6"
+                className={`w-[100px] md:w-[120px] h-auto object-contain mb-6 ${step === 2 ? 'mt-4' : ''}`}
                 priority
             />
             <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
@@ -271,10 +282,10 @@ export default function RegisterPage() {
             <form onSubmit={handleFinalSubmit} className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center relative">
                     <p className="text-sm font-bold text-[#1a237e]">Te enviamos un código de seguridad por WhatsApp al número:</p>
-                    <p className="text-lg font-black text-gray-900 mt-1">🇦🇷 +54 9 {phone}</p>
+                    <p className="text-lg font-black text-gray-900 mt-1">🇦🇷 +54 {phone}</p>
                     
                     <button type="button" onClick={() => setStep(1)} className="text-xs font-bold text-gray-500 hover:text-[#1a237e] underline underline-offset-2 mt-3 block w-full transition-colors">
-                        ← ¿Número incorrecto? Volver y modificar datos
+                        ¿Número incorrecto? Modificar datos
                     </button>
                 </div>
 
