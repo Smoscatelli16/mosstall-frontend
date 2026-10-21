@@ -49,23 +49,20 @@ export default function HeroCarousel() {
               className="flex-[0_0_100%] min-w-0 relative cursor-pointer" 
               onClick={() => window.location.href = ad.linkUrl}
             >
-               {/* Imagen para Escritorio (Desktop) */}
-               <img 
-                  src={ad.imageUrlDesktop} 
-                  alt={ad.altText} 
-                  className="w-full h-auto object-cover max-h-[350px] lg:max-h-[450px] hidden md:block"
-                  fetchPriority={index === 0 ? "high" : "auto"}
-                  loading={index === 0 ? "eager" : "lazy"}
-               />
-
-               {/* Imagen para Celular (Mobile) */}
-               <img 
-                  src={ad.imageUrlMobile} 
-                  alt={ad.altText} 
-                  className="w-full h-auto object-cover max-h-[220px] sm:max-h-[280px] md:hidden"
-                  fetchPriority={index === 0 ? "high" : "auto"}
-                  loading={index === 0 ? "eager" : "lazy"}
-               />
+               {/* TASK 51.3: Arquitectura Dual-Image Semántica */}
+               <picture className="w-full block">
+                 {/* Carga prioritaria para pantallas de escritorio y tablets (≥768px) */}
+                 <source media="(min-width: 768px)" srcSet={ad.imageUrlDesktop} />
+                 
+                 {/* Fallback y carga nativa para pantallas móviles (<768px) */}
+                 <img 
+                   src={ad.imageUrlMobile} 
+                   alt={ad.altText} 
+                   className="w-full h-auto object-cover max-h-[220px] sm:max-h-[280px] md:max-h-[350px] lg:max-h-[450px]"
+                   fetchPriority={index === 0 ? "high" : "auto"}
+                   loading={index === 0 ? "eager" : "lazy"}
+                 />
+               </picture>
             </div>
           ))}
         </div>

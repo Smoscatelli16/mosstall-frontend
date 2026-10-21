@@ -12,18 +12,19 @@ export interface BannerItem {
 export const banners: BannerItem[] = [
   {
     id: 1,
-    imageUrlDesktop: '/banner.jpg',
-    imageUrlMobile: '/banner.jpg', // Podés poner una versión vertical o cuadrada si la tenés
+    imageUrlDesktop: '/banner-1-desktop.png', // 1920x600 px
+    imageUrlMobile: '/banner-1-mobile.png',   // 1080x608 px
     altText: 'Compra Seguro en Misiones con Mission Vende',
     linkUrl: '/se-busca',
     active: true,
   },
+
   {
-    id: 2,
-    imageUrlDesktop: '/banner-2.png',
-    imageUrlMobile: '/banner-2.png',
-    altText: 'Vende tu auto al mejor precio',
-    linkUrl: '/',
+   id: 2,
+    imageUrlDesktop: '/banner-2-desktop.png', // 1920x600 px
+    imageUrlMobile: '/banner-2-mobile.png',   // 1080x608 px
+    altText: 'Compra Seguro en Misiones con Mission Vende',
+    linkUrl: '/se-busca',
     active: true,
   },
   // Añade nuevos banners aquí
