@@ -36,12 +36,12 @@ export const banners: BannerItem[] = [
     linkUrl: '/se-busca',
     active: true,
   },
- // {
-  //  id: 4,
-    //imageUrlDesktop: '/banner-4.jpeg',
-   // imageUrlMobile: '/banner-4.jpeg',
-    //altText: 'Compra Seguro en Misiones con Mission Vende',
-    //linkUrl: '/se-busca',
-    //active: true, // Cambiar a false para ocultar esta campaña
-  //},
+  {
+    id: 4,
+    imageUrlDesktop: '/banner-4-desktop.png', // 1920x600 px
+    imageUrlMobile: '/banner-4-mobile.png',   // 1080x608 px
+    altText: 'Compra Seguro en Misiones con Mission Vende',
+    linkUrl: '/se-busca',
+    active: true,
+  },
 ];
