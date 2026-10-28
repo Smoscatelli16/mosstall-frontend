@@ -37,6 +37,9 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  
+  // TASK 52.3: Filtro legal (+18)
+  const [isAdultChecked, setIsAdultChecked] = useState(false);
 
   // TASK 49.4: Integración Callback Turnstile
   useEffect(() => {
@@ -48,6 +51,11 @@ export default function RegisterPage() {
   // TASK 6.1: Función para registro con Google
   const handleGoogleSignUp = async () => {
       try {
+          // TASK 52.3: No permitir oauth sin tildar el check legal
+          if (!isAdultChecked) {
+              setMessage('Debes confirmar que eres mayor de 18 años para operar.');
+              return;
+          }
           setIsLoading(true);
           const { error } = await supabase.auth.signInWithOAuth({
               provider: 'google',
@@ -62,7 +70,7 @@ export default function RegisterPage() {
       }
   };
 
-  // TASK 49.3: Sanitización de Input Telefónico (Ajustado para el nuevo badge)
+  // TASK 49.3: Sanitización de Input Telefónico
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
     val = val.replace(/\D/g, ''); // Remover todo lo que no sea número
@@ -82,6 +90,11 @@ export default function RegisterPage() {
         return;
     }
 
+    if (!isAdultChecked) {
+        setMessage('Debes confirmar que eres mayor de 18 años para operar.');
+        return;
+    }
+
     if (!turnstileToken) {
         setMessage('Verificando seguridad... por favor aguardá un momento.');
         return;
@@ -93,12 +106,17 @@ export default function RegisterPage() {
       const response = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `+54${phone}` }), // CORREGIDO: Se eliminó el 9 fijo
+        body: JSON.stringify({ phone: `+54${phone}` }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
+        // TASK 52.1: Intercepción Modo Dev Bypass
+        if (data.devOtp) {
+            console.log(`[DEV MODE] OTP: ${data.devOtp}`);
+            alert(`[MODO SIMULACIÓN]\nTu código OTP para desarrollo es: ${data.devOtp}`);
+        }
         setStep(2);
       } else {
         setMessage(`Error: ${data.error}`);
@@ -134,7 +152,7 @@ export default function RegisterPage() {
       const verifyResponse = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `+54${phone}`, code: otp }), // CORREGIDO: Se eliminó el 9 fijo
+        body: JSON.stringify({ phone: `+54${phone}`, code: otp }), 
       });
 
       const verifyData = await verifyResponse.json();
@@ -150,20 +168,20 @@ export default function RegisterPage() {
       const registerResponse = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, password, phone: `+54${phone}`, otp, termsAccepted, turnstileToken }), // CORREGIDO: Se eliminó el 9 fijo
+        body: JSON.stringify({ email, name, password, phone: `+54${phone}`, otp, termsAccepted, turnstileToken }), 
       });
 
       const registerData = await registerResponse.json();
 
       if (registerResponse.ok) {
         setIsSuccess(true);
-        setMessage(`¡Identidad verificada, ${registerData.name}! Redirigiendo al login...`);
+        setMessage(`¡Identidad verificada, ${registerData.name}! ${registerData.message || 'Redirigiendo al login...'}`);
         
-        setEmail(''); setPassword(''); setName(''); setPhone(''); setOtp(''); setTermsAccepted(false);
+        setEmail(''); setPassword(''); setName(''); setPhone(''); setOtp(''); setTermsAccepted(false); setIsAdultChecked(false);
 
         setTimeout(() => {
             router.push('/login');
-        }, 2500); 
+        }, 3500); // Demora mayor para leer el mensaje de activar por correo
       } else {
         setIsSuccess(false);
         setMessage(`Error: ${registerData.error}`);
@@ -218,8 +236,8 @@ export default function RegisterPage() {
               <button 
                   type="button" 
                   onClick={handleGoogleSignUp}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
+                  disabled={isLoading || !isAdultChecked}
+                  className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -269,10 +287,24 @@ export default function RegisterPage() {
                 </div>
               </div>
 
+              {/* TASK 52.3: Filtro Legal de Capacidad Contratante */}
+              <div className="flex items-start gap-3 mt-4 mb-2">
+                  <input 
+                      type="checkbox" 
+                      id="adultCheck" 
+                      checked={isAdultChecked}
+                      onChange={(e) => setIsAdultChecked(e.target.checked)}
+                      className="mt-1 h-5 w-5 rounded border-gray-300 text-[#1a237e] focus:ring-[#1a237e] transition-colors cursor-pointer"
+                  />
+                  <label htmlFor="adultCheck" className="text-sm text-gray-600 font-medium leading-tight cursor-pointer">
+                      Declaro que soy <b>mayor de 18 años</b> y acepto los <Link href="/terminos" className="text-[#1a237e] font-bold hover:underline" target="_blank">Términos y Condiciones</Link> de Mission Vende.
+                  </label>
+              </div>
+
               {/* Widget Cloudflare Turnstile Invisible/Fricción Cero */}
               <div className="cf-turnstile flex justify-center mt-2" data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'} data-callback="onTurnstileSuccess"></div>
 
-              <button type="submit" disabled={isLoading || !turnstileToken} className="w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2 bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 shadow-lg disabled:bg-gray-400 disabled:hover:translate-y-0 disabled:shadow-none">
+              <button type="submit" disabled={isLoading || !turnstileToken || !isAdultChecked} className="w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2 bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 shadow-lg disabled:bg-gray-400 disabled:hover:translate-y-0 disabled:shadow-none">
                 {isLoading ? 'Aguardá un momento...' : 'Siguiente: Verificar Identidad ➜'}
               </button>
             </form>
