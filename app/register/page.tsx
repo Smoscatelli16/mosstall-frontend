@@ -31,15 +31,30 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [otp, setOtp] = useState('');
   
   // UX: Controladores
   const [showPassword, setShowPassword] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
-  
-  // TASK 52.3: Filtro legal (+18)
-  const [isAdultChecked, setIsAdultChecked] = useState(false);
+  const [simulatedOtpCode, setSimulatedOtpCode] = useState<string | null>(null);
+
+  // Cálculo dinámico de edad en el cliente
+  const calculateAge = (dateStr: string): number => {
+    if (!dateStr) return 0;
+    const birthObj = new Date(dateStr);
+    const today = new Date();
+    let age = today.getFullYear() - birthObj.getFullYear();
+    const monthDiff = today.getMonth() - birthObj.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthObj.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const calculatedAge = calculateAge(birthDate);
+  const isAdult = calculatedAge >= 18;
 
   // TASK 49.4: Integración Callback Turnstile
   useEffect(() => {
@@ -48,14 +63,9 @@ export default function RegisterPage() {
     };
   }, []);
 
-  // TASK 6.1: Función para registro con Google
+  // TASK 6.1: Función para registro con Google (Fricción Diferida: Libre de bloqueos previos)
   const handleGoogleSignUp = async () => {
       try {
-          // TASK 52.3: No permitir oauth sin tildar el check legal
-          if (!isAdultChecked) {
-              setMessage('Debes confirmar que eres mayor de 18 años para operar.');
-              return;
-          }
           setIsLoading(true);
           const { error } = await supabase.auth.signInWithOAuth({
               provider: 'google',
@@ -85,13 +95,18 @@ export default function RegisterPage() {
     e.preventDefault();
     setMessage('');
     
-    if (!name || !email || !password || !phone) {
+    if (!name || !email || !password || !phone || !birthDate) {
         setMessage('Todos los campos son obligatorios para operar de forma segura.');
         return;
     }
 
-    if (!isAdultChecked) {
-        setMessage('Debes confirmar que eres mayor de 18 años para operar.');
+    if (!isAdult) {
+        setMessage('Debes ser mayor de 18 años para operar en Mission Vende.');
+        return;
+    }
+
+    if (!termsAccepted) {
+        setMessage('Debes aceptar los Términos y Condiciones para continuar.');
         return;
     }
 
@@ -112,10 +127,13 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // TASK 52.1: Intercepción Modo Dev Bypass
+        // TASK 52.1: Intercepción Modo Dev Bypass sin alert popup
         if (data.devOtp) {
             console.log(`[DEV MODE] OTP: ${data.devOtp}`);
-            alert(`[MODO SIMULACIÓN]\nTu código OTP para desarrollo es: ${data.devOtp}`);
+            setSimulatedOtpCode(data.devOtp);
+            setOtp(data.devOtp); // Auto-completado automático
+        } else {
+            setSimulatedOtpCode(null);
         }
         setStep(2);
       } else {
@@ -135,11 +153,6 @@ export default function RegisterPage() {
     setMessage(''); 
     setIsSuccess(false);
     
-    if (!termsAccepted) {
-        setMessage('Debes aceptar los Términos de Fideicomiso para operar.');
-        return;
-    }
-
     if (otp.length !== 6) {
         setMessage('El código de verificación debe tener 6 dígitos.');
         return;
@@ -168,7 +181,7 @@ export default function RegisterPage() {
       const registerResponse = await fetch('https://mosstall-desa-production.up.railway.app/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, password, phone: `+54${phone}`, otp, termsAccepted, turnstileToken }), 
+        body: JSON.stringify({ email, name, password, phone: `+54${phone}`, otp, termsAccepted, turnstileToken, birthDate }), 
       });
 
       const registerData = await registerResponse.json();
@@ -177,7 +190,7 @@ export default function RegisterPage() {
         setIsSuccess(true);
         setMessage(`¡Identidad verificada, ${registerData.name}! ${registerData.message || 'Redirigiendo al login...'}`);
         
-        setEmail(''); setPassword(''); setName(''); setPhone(''); setOtp(''); setTermsAccepted(false); setIsAdultChecked(false);
+        setEmail(''); setPassword(''); setName(''); setPhone(''); setBirthDate(''); setOtp(''); setTermsAccepted(false); setSimulatedOtpCode(null);
 
         setTimeout(() => {
             router.push('/login');
@@ -225,18 +238,18 @@ export default function RegisterPage() {
                 {step === 1 ? 'Crear tu cuenta' : 'Verificación KYC'}
             </h1>
             <p className="text-gray-500 font-medium leading-tight">
-                {step === 1 ? 'Únete a Mission Vende y opera seguro' : 'Ingresá el código de 6 dígitos que te enviamos.'}
+                {step === 1 ? 'Únete a Mission Vende y opera seguro' : 'Ingresá el código de 6 dígitos para continuar.'}
             </p>
         </div>
         
         {step === 1 && (
             <form onSubmit={handleNextStep} className="space-y-4 animate-in fade-in zoom-in duration-300">
               
-              {/* TASK 6.1: Botón de Google */}
+              {/* TASK 6.1: Botón de Google SIEMPRE ACTIVO */}
               <button 
                   type="button" 
                   onClick={handleGoogleSignUp}
-                  disabled={isLoading || !isAdultChecked}
+                  disabled={isLoading}
                   className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -260,9 +273,26 @@ export default function RegisterPage() {
               </div>
 
               <div>
+                <label htmlFor="birthDate" className="mb-1 block text-sm font-bold text-gray-700">Fecha de Nacimiento (+18)</label>
+                <input 
+                  type="date" 
+                  id="birthDate" 
+                  value={birthDate} 
+                  onChange={(e) => setBirthDate(e.target.value)} 
+                  disabled={isLoading} 
+                  className="w-full rounded-xl border border-gray-200 bg-slate-50 p-3.5 text-gray-900 focus:border-[#1a237e] focus:ring-2 outline-none transition-all" 
+                  required 
+                />
+                {birthDate && !isAdult && (
+                  <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1">
+                    ⚠️ Debes ser mayor de 18 años para operar (Edad detectada: {calculatedAge} años).
+                  </p>
+                )}
+              </div>
+
+              <div>
                 <label htmlFor="phone" className="mb-1 block text-sm font-bold text-gray-700">Teléfono Celular (WhatsApp/SMS)</label>
                 <div className="flex items-stretch shadow-sm rounded-xl">
-                  {/* Badge unificado, sin saltos de línea */}
                   <span className="inline-flex items-center justify-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-100 text-gray-600 font-black text-sm select-none shrink-0 whitespace-nowrap">
                       🇦🇷 +54
                   </span>
@@ -287,24 +317,25 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* TASK 52.3: Filtro Legal de Capacidad Contratante */}
+              {/* RESTAURADO: Checkbox explícito de Términos y Condiciones */}
               <div className="flex items-start gap-3 mt-4 mb-2">
                   <input 
                       type="checkbox" 
-                      id="adultCheck" 
-                      checked={isAdultChecked}
-                      onChange={(e) => setIsAdultChecked(e.target.checked)}
+                      id="terms" 
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
                       className="mt-1 h-5 w-5 rounded border-gray-300 text-[#1a237e] focus:ring-[#1a237e] transition-colors cursor-pointer"
                   />
-                  <label htmlFor="adultCheck" className="text-sm text-gray-600 font-medium leading-tight cursor-pointer">
-                      Declaro que soy <b>mayor de 18 años</b> y acepto los <Link href="/terminos" className="text-[#1a237e] font-bold hover:underline" target="_blank">Términos y Condiciones</Link> de Mission Vende.
+                  <label htmlFor="terms" className="text-sm text-gray-600 font-medium leading-tight cursor-pointer">
+                      Declaro que soy mayor de 18 años y acepto los <Link href="/terminos" target="_blank" rel="noopener noreferrer" className="text-[#1a237e] font-bold hover:underline">Términos y Condiciones</Link> de Mission Vende.
                   </label>
               </div>
 
               {/* Widget Cloudflare Turnstile Invisible/Fricción Cero */}
               <div className="cf-turnstile flex justify-center mt-2" data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'} data-callback="onTurnstileSuccess"></div>
 
-              <button type="submit" disabled={isLoading || !turnstileToken || !isAdultChecked} className="w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2 bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 shadow-lg disabled:bg-gray-400 disabled:hover:translate-y-0 disabled:shadow-none">
+              {/* Botón manual dependiente del checkbox y edad */}
+              <button type="submit" disabled={isLoading || !turnstileToken || !birthDate || !isAdult || !termsAccepted} className="w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2 bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 shadow-lg disabled:bg-gray-400 disabled:hover:translate-y-0 disabled:shadow-none">
                 {isLoading ? 'Aguardá un momento...' : 'Siguiente: Verificar Identidad ➜'}
               </button>
             </form>
@@ -312,41 +343,56 @@ export default function RegisterPage() {
 
         {step === 2 && (
             <form onSubmit={handleFinalSubmit} className="space-y-6 animate-in slide-in-from-right duration-300">
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center relative">
-                    <p className="text-sm font-bold text-[#1a237e]">Te enviamos un código de seguridad por WhatsApp al número:</p>
-                    <p className="text-lg font-black text-gray-900 mt-1">🇦🇷 +54 {phone}</p>
-                    
-                    <button type="button" onClick={() => setStep(1)} className="text-xs font-bold text-gray-500 hover:text-[#1a237e] underline underline-offset-2 mt-3 block w-full transition-colors">
-                        ¿Número incorrecto? Modificar datos
-                    </button>
-                </div>
+                
+                {/* Banner adaptativo: Modo Simulación vs Producción */}
+                {simulatedOtpCode ? (
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 text-center relative shadow-sm">
+                        <span className="inline-block bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full mb-2">
+                            MODO SIMULACIÓN ACTIVADO
+                        </span>
+                        <p className="text-sm font-bold text-[#1a237e]">Código OTP generado para pruebas:</p>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                            <span className="text-2xl font-black text-indigo-900 tracking-widest bg-white px-4 py-1.5 rounded-xl border border-indigo-100 shadow-inner">
+                                {simulatedOtpCode}
+                            </span>
+                            <button 
+                                type="button" 
+                                onClick={() => setOtp(simulatedOtpCode)}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition-colors shadow-sm active:scale-95"
+                            >
+                                Re-llenar ⚡
+                            </button>
+                        </div>
+                        <p className="text-xs text-indigo-600 mt-2 font-medium">
+                          El código se cargó automáticamente en la casilla inferior.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center relative">
+                        <p className="text-sm font-bold text-[#1a237e]">Te enviamos un código de seguridad por WhatsApp al número:</p>
+                        <p className="text-lg font-black text-gray-900 mt-1">🇦🇷 +54 {phone}</p>
+                        
+                        <button type="button" onClick={() => setStep(1)} className="text-xs font-bold text-gray-500 hover:text-[#1a237e] underline underline-offset-2 mt-3 block w-full transition-colors">
+                            ¿Número incorrecto? Modificar datos
+                        </button>
+                    </div>
+                )}
 
                 <div>
                     <label className="block text-center text-sm font-bold text-gray-700 mb-2 uppercase tracking-widest">Código OTP (6 dígitos)</label>
                     <input type="text" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} disabled={isLoading} className="w-full rounded-xl border-2 border-gray-200 bg-slate-50 p-4 text-gray-900 text-3xl text-center font-black tracking-[0.5em] focus:border-[#1a237e] focus:ring-4 focus:ring-[#1a237e]/20 outline-none transition-all" placeholder="000000" required />
                 </div>
 
-                <div className="flex items-start gap-3 mt-4">
-                    <input 
-                        type="checkbox" 
-                        id="terms" 
-                        checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                        className="mt-1 h-5 w-5 rounded border-gray-300 text-[#1a237e] focus:ring-[#1a237e] transition-colors cursor-pointer"
-                    />
-                    <label htmlFor="terms" className="text-sm text-gray-600 font-medium leading-tight cursor-pointer">
-                        Acepto los <Link href="/terminos" className="text-[#1a237e] font-bold hover:underline" target="_blank">Términos, Condiciones y Políticas de Fideicomiso</Link> de Mission Vende. Autorizo la gestión de fondos en transacciones del Mercado Inverso.
-                    </label>
-                </div>
+                {/* El checkbox se eliminó de aquí porque ya se obligó en el Paso 1 */}
 
-                <button type="submit" disabled={isLoading || otp.length !== 6 || !termsAccepted} className={`w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2 ${isLoading || otp.length !== 6 || !termsAccepted ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 shadow-lg'}`}>
+                <button type="submit" disabled={isLoading || otp.length !== 6} className={`w-full rounded-xl px-5 py-4 text-center font-black text-white text-lg transition-all transform mt-2 ${isLoading || otp.length !== 6 ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#1a237e] hover:bg-[#121858] hover:-translate-y-0.5 shadow-lg'}`}>
                     {isLoading ? 'Verificando y Creando...' : 'Confirmar Registro ✅'}
                 </button>
             </form>
         )}
 
         {message && (
-          <div className={`mt-6 p-4 rounded-xl text-center text-sm font-bold animate-in fade-in zoom-in duration-300 ${isSuccess ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-[#d50000] border border-red-100'}`}>
+          <div className={`mt-6 p-4 rounded-xl text-center text-sm font-bold animate-in fade-in duration-300 ${isSuccess ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-[#d50000] border border-red-100'}`}>
             {message}
           </div>
         )}
