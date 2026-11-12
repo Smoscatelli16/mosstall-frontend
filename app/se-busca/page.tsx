@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import posthog from 'posthog-js';
 
 interface NeedListing {
   id: string;
@@ -24,7 +25,6 @@ export default function SeBuscaPage() {
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Estados del Modal de Publicación
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newNeed, setNewNeed] = useState({ title: '', description: '', estimatedBudget: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,7 +61,6 @@ export default function SeBuscaPage() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      // Manejo inteligente de sesión expirada
       if (res.status === 401) {
         localStorage.removeItem('token');
         alert('Tu sesión ha expirado o es inválida. Por favor, inicia sesión nuevamente.');
@@ -72,6 +71,9 @@ export default function SeBuscaPage() {
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || 'Error al conectar con el comprador');
+
+      // DISPARO POSTHOG: Oferta sometida en Mercado Inverso
+      posthog.capture('reverse_offer_submitted', { need_id: needId });
 
       router.push(`/chat/${data.id}`);
 
@@ -102,7 +104,6 @@ export default function SeBuscaPage() {
         body: JSON.stringify(newNeed)
       });
 
-      // Manejo inteligente de sesión expirada
       if (res.status === 401) {
         localStorage.removeItem('token');
         alert('Tu sesión ha expirado o es inválida. Por favor, inicia sesión nuevamente.');
@@ -115,7 +116,12 @@ export default function SeBuscaPage() {
         throw new Error(errorData.error || 'Error al publicar.');
       }
 
-      // Reiniciamos formulario, cerramos modal y recargamos la lista
+      // DISPARO POSTHOG: Solicitud de Mercado Inverso publicada
+      posthog.capture('reverse_request_created', { 
+          budget_offered: newNeed.estimatedBudget ? Number(newNeed.estimatedBudget) : null,
+          title_keywords: newNeed.title.toLowerCase()
+      });
+
       setNewNeed({ title: '', description: '', estimatedBudget: '' });
       setIsModalOpen(false);
       fetchNeeds(); 
@@ -131,7 +137,6 @@ export default function SeBuscaPage() {
     <div className="min-h-screen bg-slate-50 py-8 relative">
       <div className="container mx-auto px-4 max-w-5xl">
         
-        {/* Cabecera del Tablón */}
         <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
           <div>
             <h1 className="text-3xl font-black text-[#1a237e] mb-2">Mercado Inverso</h1>
@@ -147,7 +152,6 @@ export default function SeBuscaPage() {
           </button>
         </div>
 
-        {/* Estados de carga y error */}
         {loading && (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a237e]"></div>
@@ -160,7 +164,6 @@ export default function SeBuscaPage() {
           </div>
         )}
 
-        {/* Grilla de Necesidades */}
         {!loading && !error && needs.length === 0 && (
           <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-slate-200">
             <span className="text-4xl mb-4 block">🔍</span>
@@ -220,7 +223,6 @@ export default function SeBuscaPage() {
 
       </div>
 
-      {/* MODAL FLOTANTE PARA PUBLICAR NECESIDAD (Con Z-Index alto y scroll interno para móvil) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">

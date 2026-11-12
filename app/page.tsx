@@ -4,13 +4,13 @@ import Link from 'next/link';
 import ProductCard from '../components/ProductCard';
 import StorefrontFilters from '../components/StorefrontFilters';
 import HeroCarousel from '../components/HeroCarousel';
+import SearchTracker from '@/components/SearchTracker'; // BRIEF #055: Tracker de Búsquedas
 
 // Definimos el tipo asíncrono que exige Next.js 15+
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
 // 1. Configuración de SEO Local para Google
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
-  // Desenvolvemos la promesa de los parámetros
   const resolvedParams = await searchParams;
   const query = resolvedParams?.search;
   
@@ -62,34 +62,30 @@ const buildUrl = (resolvedParams: any, key: string, value: string) => {
 // 4. Renderizado de la Página Principal (Server Component)
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
   
-  // Desenvolvemos la promesa de los parámetros obligatoriamente para Next 15+
   const resolvedParams = await searchParams;
 
-  // Verificamos si el usuario está realizando una búsqueda activa (texto o filtros)
   const isSearchActive = Object.keys(resolvedParams).some(key => resolvedParams[key] !== undefined && resolvedParams[key] !== '' && key !== 'page');
   const currentType = resolvedParams.type || '';
   const currentPage = Number(resolvedParams.page) || 1;
 
-  // Hacemos las dos peticiones al mismo tiempo para mayor velocidad
   const [productsData, categories] = await Promise.all([
     getProductsData(resolvedParams),
     getCategories()
   ]);
 
-  // Manejo de compatibilidad (por si el backend devuelve un array directo o el nuevo objeto paginado)
   const products = Array.isArray(productsData) ? productsData : (productsData.products || []);
   const pagination = productsData.pagination || { currentPage: 1, totalPages: 1, totalItems: products.length };
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans">
       
-      {/* Lógica Condicional: Ocultamos el Banner si hay búsqueda */}
+      {/* Tracker Invisible Client-Side para PostHog (Task 55.2) */}
+      <SearchTracker searchParams={resolvedParams} resultsCount={pagination.totalItems} />
+
       {!isSearchActive && <HeroCarousel />}
 
-      {/* HEADER DE FILTROS INTERACTIVOS (Sticky Mobile First) */}
       <StorefrontFilters categories={categories} />
 
-      {/* BRIEF #041: CHIPS DE FILTRO POR TIPO (Sticky debajo de StorefrontFilters) */}
       <div className="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
           <div className="container mx-auto px-4 py-3 flex gap-3 overflow-x-auto scrollbar-hide items-center">
               <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mr-2">Ver:</span>
@@ -120,7 +116,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           </div>
       </div>
 
-      {/* RESULTADOS Y GRILLA */}
       <div className="container mx-auto px-4 py-8 pb-20">
         
         <div className="flex items-center justify-between mb-8">
@@ -151,7 +146,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
                     ))}
                 </div>
 
-                {/* BRIEF #041: CONTROLES DE PAGINACIÓN */}
                 {pagination.totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-16">
                         {currentPage > 1 && (

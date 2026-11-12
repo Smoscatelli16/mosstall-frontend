@@ -5,6 +5,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import MandatoryReviewModal from "@/components/MandatoryReviewModal";
 import NextTopLoader from 'nextjs-toploader'; // BRIEF #044: Top Loader
+import PostHogProvider from "@/providers/PostHogProvider"; // BRIEF #055: Telemetría
 
 // Nueva tipografía corporativa "Mission Vende": Geométrica, limpia y amigable.
 const quicksand = Quicksand({
@@ -49,9 +50,11 @@ export default function RootLayout({
         <Navbar />
         <MandatoryReviewModal />
         
-        {/* Contenedor principal que empuja el footer hacia abajo si hubiera uno */}
+        {/* Contenedor principal y Proveedor de PostHog */}
         <div className="flex-grow flex flex-col">
-          {children}
+          <PostHogProvider>
+            {children}
+          </PostHogProvider>
         </div>
       </body>
     </html>

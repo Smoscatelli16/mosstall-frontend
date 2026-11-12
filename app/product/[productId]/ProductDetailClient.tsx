@@ -1,9 +1,10 @@
 // src/app/product/[productId]/ProductDetailClient.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import posthog from 'posthog-js'; // Añadido para PostHog
 
 // --- TIPOS ---
 type StoreOwner = {
@@ -111,41 +112,100 @@ export default function ProductDetailClient({ initialProduct, productId }: Produ
   const [replyContent, setReplyContent] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
+  // --- Dwell Time Tracking (Task 55.3) ---
+  const startTime = useRef(Date.now());
+  const activeSeconds = useRef(0);
+  const lastActiveTimestamp = useRef(Date.now());
+  const hasTrackedView = useRef(false);
+
   // --- Client Side Sync ---
   useEffect(() => {
     setCurrentUserId(getUserIdFromToken());
 
-    if (!initialProduct && productId) {
-      const fetchProduct = async () => {
-        try {
-          setLoading(true);
-          setError(null);
-          setPurchaseMessage('');
+    const fetchAndSetProduct = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        setPurchaseMessage('');
 
-          const response = await fetch(`https://mosstall-desa-production.up.railway.app/api/products/${productId}`);
+        const response = await fetch(`https://mosstall-desa-production.up.railway.app/api/products/${productId}`);
 
-          if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'No se pudo encontrar el producto.');
-          }
-
-          const data: Product = await response.json();
-          setProduct(data);
-          
-          if (data.images && data.images.length > 0) {
-            setSelectedImage(data.images[0]);
-          }
-
-        } catch (err: any) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'No se pudo encontrar el producto.');
         }
-      };
 
-      fetchProduct();
+        const data: Product = await response.json();
+        setProduct(data);
+        
+        if (data.images && data.images.length > 0) {
+          setSelectedImage(data.images[0]);
+        }
+
+        // DISPARO POSTHOG: Vista de producto (solo si no se trackeó antes)
+        if (!hasTrackedView.current) {
+          posthog.capture('product_viewed', {
+            product_id: data.id,
+            category: data.category?.name || data.suggestedCategory,
+            price: data.price,
+            store_id: data.storeId,
+            type: data.type
+          });
+          hasTrackedView.current = true;
+        }
+
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!initialProduct && productId) {
+      fetchAndSetProduct();
+    } else if (initialProduct && !hasTrackedView.current) {
+       // Disparo inicial si el producto viene por props
+       posthog.capture('product_viewed', {
+        product_id: initialProduct.id,
+        category: initialProduct.category?.name || initialProduct.suggestedCategory,
+        price: initialProduct.price,
+        store_id: initialProduct.storeId,
+        type: initialProduct.type
+      });
+      hasTrackedView.current = true;
     }
   }, [productId, initialProduct]);
+
+  // --- Dwell Time Tracking Logic ---
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Pausar contador si la pestaña pierde foco
+        const timeSpent = Math.floor((Date.now() - lastActiveTimestamp.current) / 1000);
+        activeSeconds.current += timeSpent;
+      } else {
+        // Reanudar contador
+        lastActiveTimestamp.current = Date.now();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Enviar evento de permanencia al desmontar
+      const finalTimeSpent = Math.floor((Date.now() - lastActiveTimestamp.current) / 1000);
+      activeSeconds.current += finalTimeSpent;
+
+      if (activeSeconds.current >= 3) { // Solo trackeamos si miró más de 3 segundos
+          posthog.capture('product_dwell_time', {
+              product_id: productId,
+              seconds_active: activeSeconds.current
+          });
+      }
+    };
+  }, [productId]);
 
   // --- FUNCIONES DE NAVEGACIÓN DE IMÁGENES ---
   const handleNextImage = (e?: React.MouseEvent) => {
